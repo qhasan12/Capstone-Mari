@@ -3,10 +3,6 @@ from sqlalchemy.exc import IntegrityError
 from .models import Employee
  
  
-from sqlalchemy.exc import IntegrityError
-from .models import Employee
-
-
 # CREATE
 def create_employee(db, data):
     employee = Employee(**data.dict())
@@ -18,15 +14,6 @@ def create_employee(db, data):
         return employee
  
     except IntegrityError:
-    employee = Employee(**data.dict())
-
-    try:
-        db.add(employee)
-        db.commit()
-        db.refresh(employee)
-        return employee
-
-    except IntegrityError:
         db.rollback()
         raise HTTPException(status_code=400, detail="Email already exists")
  
@@ -36,9 +23,6 @@ def get_employees(db):
     return db.query(Employee).order_by(Employee.id).all()
  
  
-    return db.query(Employee).order_by(Employee.id).all()
-
-
 # READ ONE
 def get_employee_by_id(db, employee_id: int):
     employee = (
@@ -53,18 +37,6 @@ def get_employee_by_id(db, employee_id: int):
     return employee
  
  
-    employee = (
-        db.query(Employee)
-        .filter(Employee.id == employee_id)
-        .first()
-    )
-
-    if not employee:
-        raise HTTPException(status_code=404, detail="Employee not found")
-
-    return employee
-
-
 # UPDATE
 def update_employee(db, employee_id: int, data):
     employee = (
@@ -80,19 +52,6 @@ def update_employee(db, employee_id: int, data):
         setattr(employee, key, value)
  
     try:
-    employee = (
-        db.query(Employee)
-        .filter(Employee.id == employee_id)
-        .first()
-    )
-
-    if not employee:
-        raise HTTPException(status_code=404, detail="Employee not found")
-
-    for key, value in data.dict(exclude_unset=True).items():
-        setattr(employee, key, value)
-
-    try:
         db.commit()
         db.refresh(employee)
         return employee
@@ -102,14 +61,6 @@ def update_employee(db, employee_id: int, data):
         raise HTTPException(status_code=400, detail="Email already exists")
  
  
-        db.refresh(employee)
-        return employee
-
-    except IntegrityError:
-        db.rollback()
-        raise HTTPException(status_code=400, detail="Email already exists")
-
-
 # DELETE
 def delete_employee(db, employee_id: int):
     employee = (
@@ -124,17 +75,4 @@ def delete_employee(db, employee_id: int):
     db.delete(employee)
     db.commit()
  
-    return {"message": "Employee deleted successfully"}
-    employee = (
-        db.query(Employee)
-        .filter(Employee.id == employee_id)
-        .first()
-    )
-
-    if not employee:
-        raise HTTPException(status_code=404, detail="Employee not found")
-
-    db.delete(employee)
-    db.commit()
-
     return {"message": "Employee deleted successfully"}
