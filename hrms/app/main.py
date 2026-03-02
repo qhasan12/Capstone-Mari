@@ -12,6 +12,11 @@ from app.roles import models as role_models
 from app.training import models as training_models
 
 from app.employees.routes import router as employee_router
+from app.departments.routes import router as department_router
+
+from app.hiring.routes import router as hiring_router
+
+
 # (add other routers as needed)
 
 app = FastAPI(title="HRMS API")
@@ -23,4 +28,14 @@ app.include_router(
     employee_router,
     prefix="/api/v1/employees",
     tags=["Employees"]
+)
+app.include_router(
+    department_router,
+    prefix="/api/v1/departments",
+    tags=["Departments"]
+)
+app.include_router(
+    hiring_router,
+    prefix="/api/v1/hiring",
+    tags=["Hiring"]
 )
