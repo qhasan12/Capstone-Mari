@@ -3,5 +3,4 @@ uvicorn
 sqlalchemy 
 psycopg2-binary 
 python-dotenv
-# pip install "pydantic[email]"
-# sqlalchemy
+pydantic[email]
