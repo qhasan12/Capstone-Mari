@@ -6,16 +6,17 @@ from .models import Employee
 # CREATE
 def create_employee(db, data):
     employee = Employee(**data.dict())
- 
+
     try:
         db.add(employee)
         db.commit()
         db.refresh(employee)
         return employee
- 
-    except IntegrityError:
+
+    except IntegrityError as e:
         db.rollback()
-        raise HTTPException(status_code=400, detail="Email already exists")
+        print("REAL ERROR:", e)
+        raise
  
  
 # READ ALL

@@ -15,6 +15,7 @@ from app.employees.routes import router as employee_router
 from app.departments.routes import router as department_router
 from app.hiring.routes import router as hiring_router
 from app.roles.routes import router as role_router
+from app.training.routes import router as training_router
 
 # (add other routers as needed)
 
@@ -22,6 +23,7 @@ app = FastAPI(title="HRMS API")
 
 # Auto create tables (Django-like behavior)
 Base.metadata.create_all(bind=engine)
+print("CONNECTED TO:", engine.url)
 
 app.include_router(
     employee_router,
@@ -42,4 +44,9 @@ app.include_router(
     role_router,
     prefix="/api/v1/roles",
     tags=["Roles"]
+)
+app.include_router(
+    training_router,
+    prefix="/api/v1/trainings",
+    tags=["Trainings"]
 )
