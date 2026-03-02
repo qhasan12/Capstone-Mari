@@ -2,7 +2,7 @@ from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 from .models import Employee
  
-#comment
+
 # CREATE
 def create_employee(db, data):
     employee = Employee(**data.dict())
