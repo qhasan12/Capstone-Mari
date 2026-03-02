@@ -1,0 +1,65 @@
+hrms/
+│
+├── app/
+│   ├── main.py                      # FastAPI app instance
+│   ├── __init__.py
+│   │
+│   ├── core/                        # Config & Database
+│   │   ├── database.py              # Engine, SessionLocal, Base
+│   │   ├── config.py                # Env variables
+│   │   └── security.py              # Future authentication
+│   │
+│   ├── departments/                 # Departments Module
+│   │   ├── models.py
+│   │   ├── schemas.py
+│   │   ├── routes.py
+│   │   └── service.py
+│   │
+│   ├── employees/                   # Employees Module
+│   │   ├── models.py
+│   │   ├── schemas.py
+│   │   ├── routes.py
+│   │   └── service.py
+│   │
+│   ├── roles/                       # Roles Module
+│   │   ├── models.py
+│   │   ├── schemas.py
+│   │   ├── routes.py
+│   │   └── service.py
+│   │
+│   ├── hiring/                      # Hiring Requests + Job Postings
+│   │   ├── models.py                # hiring_requests + job_postings
+│   │   ├── schemas.py
+│   │   ├── routes.py
+│   │   └── service.py
+│   │
+│   ├── leave/                       # Leave Types, Balances, Requests
+│   │   ├── models.py                # leave_types, leave_balances, leave_requests
+│   │   ├── schemas.py
+│   │   ├── routes.py
+│   │   └── service.py
+│   │
+│   ├── onboarding/                  # Onboarding Module
+│   │   ├── models.py
+│   │   ├── schemas.py
+│   │   ├── routes.py
+│   │   └── service.py
+│   │
+│   ├── training/                    # Training Records
+│   │   ├── models.py
+│   │   ├── schemas.py
+│   │   ├── routes.py
+│   │   └── service.py
+│   │
+│   ├── resignation/                 # Resignation + Clearance
+│   │   ├── models.py                # resignations + clearance_records
+│   │   ├── schemas.py
+│   │   ├── routes.py
+│   │   └── service.py
+│   │
+│   └── utils/                       # Shared helpers
+│       ├── enums.py
+│       └── helpers.py
+│
+├── requirements.txt
+└── run.py                           # Entry point
