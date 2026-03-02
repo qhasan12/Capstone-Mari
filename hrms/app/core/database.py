@@ -18,3 +18,5 @@ def get_db():
         yield db
     finally:
         db.close()
+
+print("DATABASE URL:", settings.DATABASE_URL)
