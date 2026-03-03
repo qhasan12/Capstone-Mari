@@ -5,11 +5,7 @@ from app.core.database import engine, Base
 from app.departments import models as department_models
 from app.employees import models as employee_models
 from app.hiring import models as hiring_models
-from app.leave import models as leave_models
-from app.onboarding import models as onboarding_models
-from app.resignation import models as resignation_models
 from app.roles import models as role_models
-from app.training import models as training_models
 from app.common.schemas import APIResponse  
 from app.employees.routes import router as employee_router
 from app.departments.routes import router as department_router
