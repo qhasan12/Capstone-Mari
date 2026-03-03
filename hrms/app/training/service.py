@@ -29,7 +29,7 @@ def get_training_by_id(db: Session, training_id: int):
 def update_training(db: Session, training_id: int, data):
     training = get_training_by_id(db, training_id)
 
-    for key, value in data.dict(exclude_unset=True).items():
+    for key, value in data.model_dump(exclude_unset=True).items():
         setattr(training, key, value)
 
     db.commit()

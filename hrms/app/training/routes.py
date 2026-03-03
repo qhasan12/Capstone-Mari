@@ -21,8 +21,12 @@ def get_training(training_id: int, db: Session = Depends(get_db)):
     return service.get_training_by_id(db, training_id)
 
 
-@router.put("/{training_id}", response_model=schemas.TrainingResponse)
-def update_training(training_id: int, data: schemas.TrainingUpdate, db: Session = Depends(get_db)):
+@router.patch("/{training_id}", response_model=schemas.TrainingResponse)
+def update_training(
+    training_id: int,
+    data: schemas.TrainingUpdate,
+    db: Session = Depends(get_db)
+):
     return service.update_training(db, training_id, data)
 
 
