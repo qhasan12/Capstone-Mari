@@ -16,6 +16,9 @@ from app.leave.routes import router as leave_router
 from app.employees.routes import router as employee_router
 from app.departments.routes import router as department_router
 from app.hiring.routes import router as hiring_router
+from app.onboarding.routes import router as onboarding_router
+from app.roles.routes import router as roles_router
+from app.resignation.routes import router as resignation_router
 # (add other routers as needed)
 
 app = FastAPI(title="HRMS API")
@@ -45,4 +48,20 @@ app.include_router(
     prefix="/api/v1/leaves",
     tags= ["Leave"]
 )
+app.include_router(
+    onboarding_router,
+    prefix="/api/v1/onboarding",
+    tags= ["Onboarding"]
+)
 
+app.include_router(
+    roles_router,
+    prefix="/api/v1/role",
+    tags= ["Roles"]
+)
+
+app.include_router(
+    resignation_router,
+    prefix="/api/v1/resginations",
+    tags= ["Resignation"]
+)

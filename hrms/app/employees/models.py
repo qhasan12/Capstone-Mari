@@ -8,8 +8,8 @@ class Employee(Base):
 
     id = Column(Integer, primary_key=True, index=True)
 
-    is_HOD = Column(Boolean, default=False)
-    is_manager = Column(Boolean, default=False)
+    # is_HOD = Column(Boolean, default=False)
+    # is_manager = Column(Boolean, default=False)
 
     full_name = Column(String(150), nullable=False)
     email = Column(String(150), unique=True, nullable=False)
