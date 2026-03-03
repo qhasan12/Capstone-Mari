@@ -3,7 +3,7 @@ from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 import psycopg2
 from .models import Resignation, ClearanceRecord
-# from app.employees.models import Employee
+from app.employees.models import Employee
 
 
 # CREATE
