@@ -43,7 +43,7 @@ def get_department(department_id: int, db: Session = Depends(get_db)):
     )
 
 
-@router.put("/{department_id}", status_code=status.HTTP_200_OK)
+@router.patch("/{department_id}", status_code=status.HTTP_200_OK)
 def update_department(
     department_id: int,
     data: schemas.DepartmentUpdate,

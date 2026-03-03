@@ -5,6 +5,7 @@ from typing import Optional
 
 class DepartmentCreate(BaseModel):
     name: str
+    is_active: Optional[bool] = None
 
 
 class DepartmentUpdate(BaseModel):

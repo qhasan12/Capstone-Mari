@@ -75,8 +75,11 @@ class Employee(Base):
 
     # Relationships
     department = relationship("Department", back_populates="employees")
-    role = relationship("Role", back_populates="employees")
-
+    role = relationship(
+    "Role",
+    back_populates="employees",
+    foreign_keys=[role_id]  # 🔥 THIS FIXES THE ERROR
+    )
     manager = relationship(
         "Employee",
         remote_side=[id],
