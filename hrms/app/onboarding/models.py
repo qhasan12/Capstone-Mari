@@ -15,5 +15,6 @@ class Onboarding(Base):
     orientation_sent = Column(Boolean, default=False)
 
     stage = Column(String(50))
+    is_active = Column(Boolean, default=True)
 
     employee = relationship("Employee", back_populates="onboarding")

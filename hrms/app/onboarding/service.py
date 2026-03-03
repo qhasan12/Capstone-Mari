@@ -3,14 +3,11 @@ from fastapi import HTTPException
 from .models import Onboarding
 
 
-# ==========================================
-# CREATE ONBOARDING RECORD
-# ==========================================
-
+# CREATE
 def create_onboarding(db: Session, data):
-    # Check if onboarding already exists
     existing = db.query(Onboarding).filter(
-        Onboarding.employee_id == data.employee_id
+        Onboarding.employee_id == data.employee_id,
+        Onboarding.is_active == True
     ).first()
 
     if existing:
@@ -21,10 +18,6 @@ def create_onboarding(db: Session, data):
 
     onboarding = Onboarding(
         employee_id=data.employee_id,
-        appointment_letter_generated=False,
-        email_created=False,
-        resources_allocated=False,
-        orientation_sent=False,
         stage="Initiated"
     )
 
@@ -35,13 +28,11 @@ def create_onboarding(db: Session, data):
     return onboarding
 
 
-# ==========================================
-# GET ONBOARDING BY EMPLOYEE
-# ==========================================
-
-def get_onboarding_by_employee(db: Session, employee_id: int):
+# GET BY ID
+def get_onboarding_by_id(db: Session, onboarding_id: int):
     onboarding = db.query(Onboarding).filter(
-        Onboarding.employee_id == employee_id
+        Onboarding.id == onboarding_id,
+        Onboarding.is_active == True
     ).first()
 
     if not onboarding:
@@ -50,24 +41,23 @@ def get_onboarding_by_employee(db: Session, employee_id: int):
     return onboarding
 
 
-# ==========================================
-# UPDATE ONBOARDING PROGRESS
-# ==========================================
+# GET ALL
+def get_all_onboarding(db: Session):
+    return db.query(Onboarding).filter(
+        Onboarding.is_active == True
+    ).all()
 
-def update_onboarding(db: Session, employee_id: int, data):
-    onboarding = db.query(Onboarding).filter(
-        Onboarding.employee_id == employee_id
-    ).first()
 
-    if not onboarding:
-        raise HTTPException(status_code=404, detail="Onboarding not found")
+# PATCH UPDATE
+def update_onboarding(db: Session, onboarding_id: int, data):
+    onboarding = get_onboarding_by_id(db, onboarding_id)
 
     update_data = data.dict(exclude_unset=True)
 
     for field, value in update_data.items():
         setattr(onboarding, field, value)
 
-    # 🔥 Optional Smart Stage Logic
+    # Smart stage logic
     if onboarding.orientation_sent:
         onboarding.stage = "Completed"
     elif onboarding.resources_allocated:
@@ -83,9 +73,9 @@ def update_onboarding(db: Session, employee_id: int, data):
     return onboarding
 
 
-# ==========================================
-# LIST ALL ONBOARDING RECORDS
-# ==========================================
-
-def list_onboarding(db: Session):
-    return db.query(Onboarding).all()
+# SOFT DELETE
+def soft_delete_onboarding(db: Session, onboarding_id: int):
+    onboarding = get_onboarding_by_id(db, onboarding_id)
+    onboarding.is_active = False
+    db.commit()
+    return onboarding

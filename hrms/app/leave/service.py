@@ -1,11 +1,10 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
-from datetime import timedelta
 from .models import LeaveType, LeaveBalance, LeaveRequest
 
 
 # =====================================================
-# LEAVE TYPES
+# LEAVE TYPE
 # =====================================================
 
 def create_leave_type(db: Session, data):
@@ -16,8 +15,40 @@ def create_leave_type(db: Session, data):
     return leave_type
 
 
-def get_leave_types(db: Session):
-    return db.query(LeaveType).all()
+def get_leave_type_by_id(db: Session, leave_type_id: int):
+    leave_type = db.query(LeaveType).filter(
+        LeaveType.id == leave_type_id,
+        LeaveType.is_active == True
+    ).first()
+
+    if not leave_type:
+        raise HTTPException(status_code=404, detail="Leave type not found")
+
+    return leave_type
+
+
+def get_all_leave_types(db: Session):
+    return db.query(LeaveType).filter(
+        LeaveType.is_active == True
+    ).all()
+
+
+def update_leave_type(db: Session, leave_type_id: int, data):
+    leave_type = get_leave_type_by_id(db, leave_type_id)
+
+    for key, value in data.dict(exclude_unset=True).items():
+        setattr(leave_type, key, value)
+
+    db.commit()
+    db.refresh(leave_type)
+    return leave_type
+
+
+def soft_delete_leave_type(db: Session, leave_type_id: int):
+    leave_type = get_leave_type_by_id(db, leave_type_id)
+    leave_type.is_active = False
+    db.commit()
+    return leave_type
 
 
 # =====================================================
@@ -50,13 +81,11 @@ def get_employee_balances(db: Session, employee_id: int):
 # =====================================================
 
 def create_leave_request(db: Session, data):
-    # Calculate number of leave days
     leave_days = (data.end_date - data.start_date).days + 1
 
     if leave_days <= 0:
         raise HTTPException(status_code=400, detail="Invalid leave dates")
 
-    # Get balance
     balance = db.query(LeaveBalance).filter(
         LeaveBalance.employee_id == data.employee_id,
         LeaveBalance.leave_type_id == data.leave_type_id
@@ -84,7 +113,7 @@ def create_leave_request(db: Session, data):
     return leave_request
 
 
-def update_leave_status(db: Session, leave_id: int, data):
+def update_leave_request(db: Session, leave_id: int, data):
     leave = db.query(LeaveRequest).filter(
         LeaveRequest.id == leave_id
     ).first()
@@ -92,9 +121,9 @@ def update_leave_status(db: Session, leave_id: int, data):
     if not leave:
         raise HTTPException(status_code=404, detail="Leave request not found")
 
-    leave.status = data.status
+    for key, value in data.dict(exclude_unset=True).items():
+        setattr(leave, key, value)
 
-    # If approved → deduct leaves
     if data.status == "Approved":
         leave_days = (leave.end_date - leave.start_date).days + 1
 
@@ -108,7 +137,6 @@ def update_leave_status(db: Session, leave_id: int, data):
 
     db.commit()
     db.refresh(leave)
-
     return leave
 
 

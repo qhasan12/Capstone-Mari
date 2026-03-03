@@ -12,6 +12,11 @@ class LeaveTypeCreate(BaseModel):
     default_allocation: int
 
 
+class LeaveTypeUpdate(BaseModel):
+    name: Optional[str] = None
+    default_allocation: Optional[int] = None
+
+
 class LeaveTypeResponse(BaseModel):
     id: int
     name: str
@@ -56,7 +61,7 @@ class LeaveRequestCreate(BaseModel):
 
 
 class LeaveRequestUpdate(BaseModel):
-    status: str
+    status: Optional[str] = None
 
 
 class LeaveRequestResponse(BaseModel):

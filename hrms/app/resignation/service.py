@@ -3,18 +3,22 @@ from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 import psycopg2
 from .models import Resignation, ClearanceRecord
-from app.employees.models import Employee
+# from app.employees.models import Employee
 
 
-# ==========================================
-# CREATE RESIGNATION
-# ==========================================
-
+# CREATE
 def create_resignation(db: Session, data):
-    # Check employee exists
     employee = db.query(Employee).filter(Employee.id == data.employee_id).first()
     if not employee:
         raise HTTPException(status_code=404, detail="Employee not found")
+
+    existing = db.query(Resignation).filter(
+        Resignation.employee_id == data.employee_id,
+        Resignation.is_active == True
+    ).first()
+
+    if existing:
+        raise HTTPException(status_code=400, detail="Resignation already exists")
 
     resignation = Resignation(
         employee_id=data.employee_id,
@@ -24,39 +28,22 @@ def create_resignation(db: Session, data):
         status="Pending Approval"
     )
 
-    try:
-        db.add(resignation)
-        db.commit()
-        db.refresh(resignation)
+    db.add(resignation)
+    db.commit()
+    db.refresh(resignation)
 
-        # Auto-create clearance record
-        clearance = ClearanceRecord(
-            resignation_id=resignation.id
-        )
-        db.add(clearance)
-        db.commit()
+    clearance = ClearanceRecord(resignation_id=resignation.id)
+    db.add(clearance)
+    db.commit()
 
-        return resignation
-
-    except IntegrityError as e:
-        db.rollback()
-
-        if isinstance(e.orig, psycopg2.errors.UniqueViolation):
-            raise HTTPException(
-                status_code=400,
-                detail="Resignation already exists for this employee"
-            )
-
-        raise HTTPException(status_code=400, detail="Database integrity error")
+    return resignation
 
 
-# ==========================================
-# GET RESIGNATION BY EMPLOYEE
-# ==========================================
-
-def get_resignation_by_employee(db: Session, employee_id: int):
+# GET BY ID
+def get_resignation_by_id(db: Session, resignation_id: int):
     resignation = db.query(Resignation).filter(
-        Resignation.employee_id == employee_id
+        Resignation.id == resignation_id,
+        Resignation.is_active == True
     ).first()
 
     if not resignation:
@@ -65,24 +52,22 @@ def get_resignation_by_employee(db: Session, employee_id: int):
     return resignation
 
 
-# ==========================================
-# UPDATE RESIGNATION (Approval)
-# ==========================================
+# GET ALL
+def get_all_resignations(db: Session):
+    return db.query(Resignation).filter(
+        Resignation.is_active == True
+    ).all()
 
-def update_resignation(db: Session, employee_id: int, data):
-    resignation = db.query(Resignation).filter(
-        Resignation.employee_id == employee_id
-    ).first()
 
-    if not resignation:
-        raise HTTPException(status_code=404, detail="Resignation not found")
+# PATCH UPDATE
+def update_resignation(db: Session, resignation_id: int, data):
+    resignation = get_resignation_by_id(db, resignation_id)
 
     update_data = data.dict(exclude_unset=True)
 
     for key, value in update_data.items():
         setattr(resignation, key, value)
 
-    # Auto status update
     if resignation.manager_approved:
         resignation.status = "Approved"
     else:
@@ -94,13 +79,19 @@ def update_resignation(db: Session, employee_id: int, data):
     return resignation
 
 
-# ==========================================
-# UPDATE CLEARANCE
-# ==========================================
+# SOFT DELETE
+def deactivate_resignation(db: Session, resignation_id: int):
+    resignation = get_resignation_by_id(db, resignation_id)
+    resignation.is_active = False
+    db.commit()
+    return resignation
 
+
+# UPDATE CLEARANCE
 def update_clearance(db: Session, resignation_id: int, data):
     clearance = db.query(ClearanceRecord).filter(
-        ClearanceRecord.resignation_id == resignation_id
+        ClearanceRecord.resignation_id == resignation_id,
+        ClearanceRecord.is_active == True
     ).first()
 
     if not clearance:
@@ -111,7 +102,6 @@ def update_clearance(db: Session, resignation_id: int, data):
     for key, value in update_data.items():
         setattr(clearance, key, value)
 
-    # Auto complete logic
     if (
         clearance.laptop_returned and
         clearance.access_revoked and
@@ -123,11 +113,3 @@ def update_clearance(db: Session, resignation_id: int, data):
     db.refresh(clearance)
 
     return clearance
-
-
-# ==========================================
-# LIST ALL RESIGNATIONS
-# ==========================================
-
-def list_resignations(db: Session):
-    return db.query(Resignation).all()
