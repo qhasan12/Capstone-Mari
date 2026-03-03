@@ -3,21 +3,21 @@ from datetime import datetime
 from typing import Optional
 
 
-# Used for creating department
 class DepartmentCreate(BaseModel):
     name: str
+    is_active: Optional[bool] = None
 
 
-# Used for updating department
 class DepartmentUpdate(BaseModel):
     name: Optional[str] = None
+    is_active: Optional[bool] = None
 
 
-# Response model
 class DepartmentResponse(BaseModel):
     id: int
     name: str
     created_at: datetime
+    is_active: bool
 
     class Config:
-        from_attributes = True  # important for SQLAlchemy
+        from_attributes = True

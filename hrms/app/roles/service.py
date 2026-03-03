@@ -1,67 +1,117 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
 from app.roles.models import Role
-from app.roles.schemas import RoleCreate, RoleUpdate
+from app.employees.models import Employee
 
 
-# -----------------------
-# Create Role
-# -----------------------
+# CREATE
+def create_role(db: Session, role_data):
+    title = role_data.title.strip()
 
-def create_role(db: Session, role_data: RoleCreate):
-    existing = db.query(Role).filter(Role.title == role_data.title).first()
+    existing = db.query(Role).filter(
+        Role.title == title
+    ).first()
+
     if existing:
-        raise HTTPException(status_code=400, detail="Role already exists")
+        raise HTTPException(
+            status_code=400,
+            detail="Role already exists"
+        )
 
-    role = Role(**role_data.model_dump())
+    role = Role(
+        title=title,
+        level=role_data.level,
+        description=role_data.description,
+        is_active=role_data.is_active if role_data.is_active is not None else True
+    )
+
     db.add(role)
     db.commit()
     db.refresh(role)
+
     return role
 
 
-# -----------------------
-# Get All
-# -----------------------
-
+# READ ALL (only active)
 def get_all_roles(db: Session):
-    return db.query(Role).all()
+    return (
+        db.query(Role)
+        .filter(Role.is_active == True)
+        .order_by(Role.id)
+        .all()
+    )
 
 
-# -----------------------
-# Get By ID
-# -----------------------
-
+# READ ONE
 def get_role_by_id(db: Session, role_id: int):
-    role = db.query(Role).filter(Role.id == role_id).first()
+    role = db.query(Role).filter(
+        Role.id == role_id
+    ).first()
+
     if not role:
-        raise HTTPException(status_code=404, detail="Role not found")
+        raise HTTPException(
+            status_code=404,
+            detail="Role not found"
+        )
+
     return role
 
 
-# -----------------------
-# Update
-# -----------------------
-
-def update_role(db: Session, role_id: int, update_data: RoleUpdate):
+# UPDATE (PATCH style)
+def update_role(db: Session, role_id: int, update_data):
     role = get_role_by_id(db, role_id)
 
-    for field, value in update_data.model_dump(exclude_unset=True).items():
-        setattr(role, field, value)
+    data = update_data.model_dump(exclude_unset=True)
+
+    # Handle title separately for duplicate protection
+    if "title" in data:
+        data["title"] = data["title"].strip()
+
+        existing = db.query(Role).filter(
+            Role.title == data["title"],
+            Role.id != role_id
+        ).first()
+
+        if existing:
+            raise HTTPException(
+                status_code=400,
+                detail="Role title already in use"
+            )
+
+    for key, value in data.items():
+        setattr(role, key, value)
 
     db.commit()
     db.refresh(role)
+
     return role
 
 
-# -----------------------
-# Delete
-# -----------------------
-
+# SOFT DELETE
 def delete_role(db: Session, role_id: int):
     role = get_role_by_id(db, role_id)
 
-    db.delete(role)
-    db.commit()
+    if not role.is_active:
+        raise HTTPException(
+            status_code=400,
+            detail="Role already inactive"
+        )
 
-    return {"message": "Role deleted successfully"}
+    # Business rule: prevent deactivation if active employees exist
+    active_employee = db.query(Employee).filter(
+        Employee.role_id == role_id,
+        Employee.is_active == True
+    ).first()
+
+    if active_employee:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot deactivate role assigned to active employees"
+        )
+
+    role.is_active = False
+
+    db.commit()
+    db.refresh(role)
+
+    return role

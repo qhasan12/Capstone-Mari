@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from typing import List
-
+from app.common.schemas import APIResponse
 from app.core.database import get_db
 from app.hiring.schemas import (
     HiringRequestCreate,
@@ -19,69 +19,113 @@ router = APIRouter(tags=["Hiring"])
 # Job Posting Routes (STATIC FIRST)
 # =====================================================
 
-@router.post("/job-posting", response_model=JobPostingResponse)
+@router.post("/job-posting")
 def create_job_posting(
     job_data: JobPostingCreate,
     db: Session = Depends(get_db)
 ):
-    return service.create_job_posting(db, job_data)
+    posting = service.create_job_posting(db, job_data)
 
-
-@router.get("/job-posting", response_model=List[JobPostingResponse])
+    return APIResponse(
+        code=201,
+        message="Job posting created successfully",
+        data=JobPostingResponse.model_validate(posting)
+    )
+@router.get("/job-posting")
 def get_job_postings(db: Session = Depends(get_db)):
-    return service.get_all_job_postings(db)
+    postings = service.get_all_job_postings(db)
 
+    return APIResponse(
+        code=200,
+        message="Job postings fetched successfully",
+        data=[JobPostingResponse.model_validate(p) for p in postings]
+    )
 
-@router.get("/job-posting/{posting_id}", response_model=JobPostingResponse)
+@router.get("/job-posting/{posting_id}")
 def get_job_posting(posting_id: int, db: Session = Depends(get_db)):
-    return service.get_job_posting_by_id(db, posting_id)
+    posting = service.get_job_posting_by_id(db, posting_id)
 
-
-@router.put("/job-posting/{posting_id}", response_model=JobPostingResponse)
+    return APIResponse(
+        code=200,
+        message="Job posting fetched successfully",
+        data=JobPostingResponse.model_validate(posting)
+    )
+@router.patch("/job-posting/{posting_id}")
 def update_job_posting(
     posting_id: int,
     update_data: JobPostingUpdate,
     db: Session = Depends(get_db)
 ):
-    return service.update_job_posting(db, posting_id, update_data)
+    posting = service.update_job_posting(db, posting_id, update_data)
 
-
+    return APIResponse(
+        code=200,
+        message="Job posting updated successfully",
+        data=JobPostingResponse.model_validate(posting)
+    )
 @router.delete("/job-posting/{posting_id}")
 def delete_job_posting(posting_id: int, db: Session = Depends(get_db)):
-    return service.delete_job_posting(db, posting_id)
+    service.delete_job_posting(db, posting_id)
 
+    return APIResponse(
+        code=200,
+        message="Job posting deactivated successfully"
+    )
 
 # =====================================================
 # Hiring Request Routes
 # =====================================================
 
-@router.post("/", response_model=HiringRequestResponse)
+@router.post("/")
 def create_hiring_request(
     hiring_data: HiringRequestCreate,
     db: Session = Depends(get_db)
 ):
-    return service.create_hiring_request(db, hiring_data)
+    hiring = service.create_hiring_request(db, hiring_data)
 
-
-@router.get("/", response_model=List[HiringRequestResponse])
+    return APIResponse(
+        code=201,
+        message="Hiring request created successfully",
+        data=HiringRequestResponse.model_validate(hiring)
+    )
+@router.get("/")
 def get_hiring_requests(db: Session = Depends(get_db)):
-    return service.get_all_hiring_requests(db)
+    hirings = service.get_all_hiring_requests(db)
 
-
-@router.get("/{hiring_id}", response_model=HiringRequestResponse)
+    return APIResponse(
+        code=200,
+        message="Hiring requests fetched successfully",
+        data=[HiringRequestResponse.model_validate(h) for h in hirings]
+    )
+@router.get("/{hiring_id}")
 def get_hiring_request(hiring_id: int, db: Session = Depends(get_db)):
-    return service.get_hiring_request_by_id(db, hiring_id)
+    hiring = service.get_hiring_request_by_id(db, hiring_id)
 
+    return APIResponse(
+        code=200,
+        message="Hiring request fetched successfully",
+        data=HiringRequestResponse.model_validate(hiring)
+    )
 
-@router.put("/{hiring_id}", response_model=HiringRequestResponse)
+@router.patch("/{hiring_id}")
 def update_hiring(
     hiring_id: int,
     update_data: HiringRequestUpdate,
     db: Session = Depends(get_db)
 ):
-    return service.update_hiring_request(db, hiring_id, update_data)
+    hiring = service.update_hiring_request(db, hiring_id, update_data)
 
+    return APIResponse(
+        code=200,
+        message="Hiring request updated successfully",
+        data=HiringRequestResponse.model_validate(hiring)
+    )
 
 @router.delete("/{hiring_id}")
 def delete_hiring(hiring_id: int, db: Session = Depends(get_db)):
-    return service.delete_hiring_request(db, hiring_id)
+    service.delete_hiring_request(db, hiring_id)
+
+    return APIResponse(
+        code=200,
+        message="Hiring request deactivated successfully"
+    )
