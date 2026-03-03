@@ -2,15 +2,6 @@ from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import date, datetime
 
-
-# =====================================================
-# Hiring Request Schemas
-# =====================================================
-from pydantic import BaseModel, Field
-from typing import Optional
-from datetime import date, datetime
-
-
 # =====================================================
 # Hiring Request Schemas
 # =====================================================
@@ -50,14 +41,6 @@ class HiringRequestResponse(HiringRequestBase):
 
     class Config:
         from_attributes = True
-
-# =====================================================
-# Job Posting Schemas
-# =====================================================
-from pydantic import BaseModel, Field
-from typing import Optional
-from datetime import date
-
 
 # =====================================================
 # Job Posting Schemas
