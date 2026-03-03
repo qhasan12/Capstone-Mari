@@ -1,5 +1,7 @@
 from fastapi import FastAPI
 from app.core.database import engine, Base
+from fastapi.exceptions import RequestValidationError
+from fastapi import HTTPException
 
 # IMPORTANT: import all models so SQLAlchemy registers them
 from app.departments import models as department_models
@@ -16,6 +18,12 @@ from app.departments.routes import router as department_router
 from app.hiring.routes import router as hiring_router
 from app.roles.routes import router as role_router
 from app.training.routes import router as training_router
+
+from app.core.exceptions import (
+    http_exception_handler,
+    validation_exception_handler
+)
+
 
 # (add other routers as needed)
 
@@ -50,3 +58,7 @@ app.include_router(
     prefix="/api/v1/trainings",
     tags=["Trainings"]
 )
+
+
+app.add_exception_handler(HTTPException, http_exception_handler)
+app.add_exception_handler(RequestValidationError, validation_exception_handler)

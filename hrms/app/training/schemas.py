@@ -17,10 +17,12 @@ class TrainingUpdate(BaseModel):
     training_title: str | None = None
     training_date: date | None = None
     status: str | None = None
+    is_active: bool | None = None 
 
 
 class TrainingResponse(TrainingBase):
     id: int
+    is_active: bool
 
     class Config:
         from_attributes = True

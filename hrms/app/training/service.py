@@ -1,44 +1,93 @@
 from sqlalchemy.orm import Session
-from fastapi import HTTPException
+from fastapi import HTTPException, status
 from .models import TrainingRecord
+from app.employees.models import Employee
 
 
+# CREATE
 def create_training(db: Session, data):
-    training = TrainingRecord(**data.dict())
+    # Validate employee exists
+    employee = db.query(Employee).filter(
+        Employee.id == data.employee_id
+    ).first()
+
+    if not employee:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Employee not found"
+        )
+
+    training = TrainingRecord(**data.model_dump())
+
     db.add(training)
     db.commit()
     db.refresh(training)
+
     return training
 
 
+# READ ALL
 def get_trainings(db: Session):
-    return db.query(TrainingRecord).all()
+    trainings = db.query(TrainingRecord).all()
+    return trainings
 
 
+# READ ONE
 def get_training_by_id(db: Session, training_id: int):
     training = db.query(TrainingRecord).filter(
         TrainingRecord.id == training_id
     ).first()
 
     if not training:
-        raise HTTPException(status_code=404, detail="Training not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Training not found"
+        )
 
     return training
 
 
+# UPDATE (PATCH)
 def update_training(db: Session, training_id: int, data):
     training = get_training_by_id(db, training_id)
 
-    for key, value in data.model_dump(exclude_unset=True).items():
+    update_data = data.model_dump(exclude_unset=True)
+
+    # Validate employee if being updated
+    if "employee_id" in update_data:
+        employee = db.query(Employee).filter(
+            Employee.id == update_data["employee_id"]
+        ).first()
+
+        if not employee:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Employee not found"
+            )
+
+    # Update fields (including is_active if provided)
+    for key, value in update_data.items():
         setattr(training, key, value)
 
     db.commit()
     db.refresh(training)
+
     return training
 
 
+# soft delete
 def delete_training(db: Session, training_id: int):
     training = get_training_by_id(db, training_id)
-    db.delete(training)
+
+    if not training.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Training already inactive"
+        )
+
+    training.is_active = False
+
     db.commit()
-    return {"message": "Training deleted successfully"}
+    db.refresh(training)
+
+    return training
