@@ -1,0 +1,83 @@
+What is Alembic?
+
+Alembic = Database version control for SQLAlchemy.
+
+Instead of:
+
+Deleting DB
+
+Running create_all()
+
+Losing data
+
+You:
+
+Track schema changes
+
+Apply them safely
+
+Roll back if needed
+
+Keep history in Git
+
+Think:
+
+Git for your database structure.
+
+🏗️ ONE-TIME SETUP (Do This Once Per Project)
+✅ Step 1 — Install Alembic
+
+Inside your virtualenv:
+
+pip install alembic
+✅ Step 2 — Initialize Alembic
+
+From project root (where app/ exists):
+
+alembic init alembic
+
+This creates:
+
+alembic/
+    versions/
+alembic.ini
+✅ Step 3 — Connect Alembic to Your Models
+
+Open:
+
+alembic/env.py
+
+Find:
+
+target_metadata = None
+
+Replace with:
+
+from app.core.database import Base
+target_metadata = Base.metadata
+
+This allows Alembic to read all your models.
+
+✅ Step 4 — Connect to Database
+
+Open:
+
+alembic.ini
+
+Set:
+
+sqlalchemy.url = postgresql://user:password@localhost/hrms
+
+OR (better):
+
+Modify env.py to use your project’s DB config dynamically.
+
+❗ Important
+
+Once using Alembic:
+
+REMOVE this from main.py:
+
+Base.metadata.create_all(bind=engine)
+
+Alembic now manages schema.

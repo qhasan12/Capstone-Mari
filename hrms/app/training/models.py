@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Date, ForeignKey
+from sqlalchemy import Column, Integer, String, Date, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 
@@ -12,5 +12,7 @@ class TrainingRecord(Base):
     training_title = Column(String(150))
     training_date = Column(Date)
     status = Column(String(50))
+    
+    is_active = Column(Boolean, default=True)
 
     employee = relationship("Employee", back_populates="training_records")

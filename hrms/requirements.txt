@@ -3,4 +3,9 @@ uvicorn
 sqlalchemy 
 psycopg2-binary 
 python-dotenv
+<<<<<<< HEAD
 pydantic[email]
+=======
+pydantic[email]
+alembic
+>>>>>>> dev-branch

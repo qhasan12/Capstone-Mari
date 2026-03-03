@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 from sqlalchemy import Column, Integer, Date, Boolean, String, ForeignKey
 from sqlalchemy.orm import relationship
 from app.core.database import Base
@@ -34,3 +35,5 @@ class ClearanceRecord(Base):
     is_active = Column(Boolean, default=True)
 
     resignation = relationship("Resignation", back_populates="clearance")
+=======
+>>>>>>> dev-branch
