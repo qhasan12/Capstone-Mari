@@ -5,12 +5,30 @@ from .models import Employee
 from app.departments.models import Department
 from app.roles.models import Role
 
+# CREATE
+def create_employee(db, data):
+    employee = Employee(**data.dict())
 
-# =========================
-# READ ALL (Active Only)
-# =========================
-def get_employees(db: Session):
-    return (
+    try:
+        db.add(employee)
+        db.commit()
+        db.refresh(employee)
+        return employee
+
+    except IntegrityError as e:
+        db.rollback()
+        print("REAL ERROR:", e)
+        raise
+ 
+ 
+# READ ALL
+def get_employees(db):
+    return db.query(Employee).order_by(Employee.id).all()
+ 
+ 
+# READ ONE
+def get_employee_by_id(db, employee_id: int):
+    employee = (
         db.query(Employee)
         .filter(Employee.is_active == True)
         .order_by(Employee.id)
