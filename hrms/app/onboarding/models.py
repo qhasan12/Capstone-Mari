@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 from sqlalchemy import Column, Integer, Boolean, String, ForeignKey
 from sqlalchemy.orm import relationship
 from app.core.database import Base
@@ -19,5 +18,3 @@ class Onboarding(Base):
     is_active = Column(Boolean, default=True)
 
     employee = relationship("Employee", back_populates="onboarding")
-=======
->>>>>>> dev-branch

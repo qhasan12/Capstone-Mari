@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 from sqlalchemy import Column, Integer, String, Date, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 from app.core.database import Base
@@ -47,5 +46,3 @@ class LeaveRequest(Base):
 
     employee = relationship("Employee", back_populates="leave_requests")
     leave_type = relationship("LeaveType", back_populates="requests")
-=======
->>>>>>> dev-branch

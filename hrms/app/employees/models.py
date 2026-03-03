@@ -19,12 +19,6 @@ class Employee(Base):
 
     id = Column(Integer, primary_key=True, index=True)
 
-<<<<<<< HEAD
-    # is_HOD = Column(Boolean, default=False)
-    # is_manager = Column(Boolean, default=False)
-
-=======
->>>>>>> dev-branch
     full_name = Column(String(150), nullable=False)
 
     email = Column(
