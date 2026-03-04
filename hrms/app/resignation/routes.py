@@ -7,6 +7,10 @@ from . import service, schemas
 router = APIRouter()
 
 
+# =====================================================
+# RESIGNATION
+# =====================================================
+
 @router.post("/", status_code=status.HTTP_201_CREATED)
 def create_resignation(
     data: schemas.ResignationCreate,
@@ -23,6 +27,7 @@ def create_resignation(
 
 @router.get("/", status_code=status.HTTP_200_OK)
 def list_resignations(db: Session = Depends(get_db)):
+
     records = service.get_all_resignations(db)
 
     return APIResponse(
@@ -40,6 +45,7 @@ def get_resignation(
     resignation_id: int,
     db: Session = Depends(get_db)
 ):
+
     resignation = service.get_resignation_by_id(db, resignation_id)
 
     return APIResponse(
@@ -55,6 +61,7 @@ def update_resignation(
     data: schemas.ResignationUpdate,
     db: Session = Depends(get_db)
 ):
+
     resignation = service.update_resignation(db, resignation_id, data)
 
     return APIResponse(
@@ -69,11 +76,31 @@ def delete_resignation(
     resignation_id: int,
     db: Session = Depends(get_db)
 ):
+
     service.deactivate_resignation(db, resignation_id)
 
     return APIResponse(
         code=status.HTTP_200_OK,
         message="Resignation deactivated successfully"
+    )
+
+
+# =====================================================
+# CLEARANCE
+# =====================================================
+
+@router.get("/clearance/{resignation_id}", status_code=status.HTTP_200_OK)
+def get_clearance(
+    resignation_id: int,
+    db: Session = Depends(get_db)
+):
+
+    clearance = service.get_clearance_by_resignation_id(db, resignation_id)
+
+    return APIResponse(
+        code=status.HTTP_200_OK,
+        message="Clearance retrieved successfully",
+        data=schemas.ClearanceResponse.model_validate(clearance)
     )
 
 
@@ -83,10 +110,25 @@ def update_clearance(
     data: schemas.ClearanceUpdate,
     db: Session = Depends(get_db)
 ):
+
     clearance = service.update_clearance(db, resignation_id, data)
 
     return APIResponse(
         code=status.HTTP_200_OK,
         message="Clearance updated successfully",
         data=schemas.ClearanceResponse.model_validate(clearance)
+    )
+
+
+@router.delete("/clearance/{resignation_id}", status_code=status.HTTP_200_OK)
+def delete_clearance(
+    resignation_id: int,
+    db: Session = Depends(get_db)
+):
+
+    service.deactivate_clearance(db, resignation_id)
+
+    return APIResponse(
+        code=status.HTTP_200_OK,
+        message="Clearance deactivated successfully"
     )
