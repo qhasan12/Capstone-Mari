@@ -4,6 +4,9 @@ from app.roles.models import Role
 from app.employees.models import Employee
 
 # CREATE
+#Alishba;s comment: Added duplicate title check and default is_active to True if not provided
+def test():
+    pass
 def create_role(db: Session, role_data):
     title = role_data.title.strip()
 
