@@ -4,9 +4,9 @@ from app.roles.models import Role
 from app.employees.models import Employee
 
 # CREATE
-#Alishba;s comment: Added duplicate title check and default is_active to True if not provided
-def test():
-    return "This is a test function to prevent empty file issues. Remove this when adding actual code."
+#Qamar;s comment: Added duplicate title check and default is_active to True if not provided
+def test1():
+    return 1+2
 def create_role(db: Session, role_data):
     title = role_data.title.strip()
 
