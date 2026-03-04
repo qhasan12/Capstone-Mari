@@ -33,6 +33,7 @@ def get_trainings(db: Session):
 
 
 # READ ONE
+#is_active is not checked here to allow retrieval of both active and inactive records for auditing purposes.
 def get_training_by_id(db: Session, training_id: int):
     training = db.query(TrainingRecord).filter(
         TrainingRecord.id == training_id

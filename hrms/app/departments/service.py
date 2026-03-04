@@ -29,8 +29,8 @@ def get_department_by_id(db: Session, department_id: int):
     if not department:
         raise HTTPException(status_code=404, detail="Department not found")
 
-    if not department.is_active:
-        raise HTTPException(status_code=400, detail="Department is inactive")
+    # if not department.is_active:
+    #     raise HTTPException(status_code=400, detail="Department is inactive")
 
     return department
 

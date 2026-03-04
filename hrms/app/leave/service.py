@@ -17,8 +17,7 @@ def create_leave_type(db: Session, data):
 
 def get_leave_type_by_id(db: Session, leave_type_id: int):
     leave_type = db.query(LeaveType).filter(
-        LeaveType.id == leave_type_id,
-        LeaveType.is_active == True
+        LeaveType.id == leave_type_id
     ).first()
 
     if not leave_type:

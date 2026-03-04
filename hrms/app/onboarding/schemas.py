@@ -8,6 +8,7 @@ from typing import Optional
 
 class OnboardingCreate(BaseModel):
     employee_id: int
+    is_active: Optional[bool] = True
 
 
 # ==============================
@@ -20,6 +21,7 @@ class OnboardingUpdate(BaseModel):
     resources_allocated: Optional[bool] = None
     orientation_sent: Optional[bool] = None
     stage: Optional[str] = None
+    is_active: Optional[bool] = True
 
 
 # ==============================
@@ -34,6 +36,7 @@ class OnboardingResponse(BaseModel):
     resources_allocated: bool
     orientation_sent: bool
     stage: Optional[str]
+    is_active: Optional[bool] = True
 
     class Config:
         from_attributes = True

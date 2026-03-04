@@ -11,12 +11,13 @@ class ResignationCreate(BaseModel):
     employee_id: int
     resignation_date: date
     notice_end_date: date
+    is_active: Optional[bool] = True
 
 
 class ResignationUpdate(BaseModel):
     manager_approved: Optional[bool] = None
     status: Optional[str] = None
-
+    is_active: Optional[bool] = True
 
 class ResignationResponse(BaseModel):
     id: int
@@ -25,6 +26,7 @@ class ResignationResponse(BaseModel):
     notice_end_date: date
     manager_approved: bool
     status: Optional[str]
+    is_active: Optional[bool] = True
 
     class Config:
         from_attributes = True
@@ -39,6 +41,7 @@ class ClearanceUpdate(BaseModel):
     access_revoked: Optional[bool] = None
     email_deactivated: Optional[bool] = None
     clearance_completed: Optional[bool] = None
+    is_active: Optional[bool] = True
 
 
 class ClearanceResponse(BaseModel):
@@ -48,6 +51,7 @@ class ClearanceResponse(BaseModel):
     access_revoked: bool
     email_deactivated: bool
     clearance_completed: bool
+    is_active: Optional[bool] = True
 
     class Config:
         from_attributes = True

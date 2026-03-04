@@ -31,8 +31,7 @@ def create_onboarding(db: Session, data):
 # GET BY ID
 def get_onboarding_by_id(db: Session, onboarding_id: int):
     onboarding = db.query(Onboarding).filter(
-        Onboarding.id == onboarding_id,
-        Onboarding.is_active == True
+        Onboarding.id == onboarding_id
     ).first()
 
     if not onboarding:

@@ -22,7 +22,7 @@ def create_hiring_request(db: Session, hiring_data: HiringRequestCreate):
     return hiring_request
 
 
-# READ ALL
+# READ ALL (only active)
 def get_all_hiring_requests(db: Session):
     return (
         db.query(HiringRequest)
@@ -37,8 +37,7 @@ def get_hiring_request_by_id(db: Session, hiring_id: int):
     hiring = (
         db.query(HiringRequest)
         .filter(
-            HiringRequest.id == hiring_id,
-            HiringRequest.is_active == True
+            HiringRequest.id == hiring_id
         )
         .first()
     )
@@ -52,14 +51,7 @@ def get_hiring_request_by_id(db: Session, hiring_id: int):
 # UPDATE (PATCH)
 def update_hiring_request(db: Session, hiring_id: int, update_data: HiringRequestUpdate):
 
-    hiring = (
-        db.query(HiringRequest)
-        .filter(
-            HiringRequest.id == hiring_id,
-            HiringRequest.is_active == True
-        )
-        .first()
-    )
+    hiring = get_hiring_request_by_id(db, hiring_id)
 
     if not hiring:
         raise HTTPException(status_code=404, detail="Hiring request not found")
@@ -142,8 +134,7 @@ def get_job_posting_by_id(db: Session, posting_id: int):
     posting = (
         db.query(JobPosting)
         .filter(
-            JobPosting.id == posting_id,
-            JobPosting.is_active == True
+            JobPosting.id == posting_id
         )
         .first()
     )
@@ -157,14 +148,7 @@ def get_job_posting_by_id(db: Session, posting_id: int):
 # UPDATE
 def update_job_posting(db: Session, posting_id: int, update_data: JobPostingUpdate):
 
-    posting = (
-        db.query(JobPosting)
-        .filter(
-            JobPosting.id == posting_id,
-            JobPosting.is_active == True
-        )
-        .first()
-    )
+    posting = get_job_posting_by_id(db, posting_id)
 
     if not posting:
         raise HTTPException(status_code=404, detail="Job posting not found")

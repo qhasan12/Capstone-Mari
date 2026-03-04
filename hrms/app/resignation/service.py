@@ -42,8 +42,7 @@ def create_resignation(db: Session, data):
 # GET BY ID
 def get_resignation_by_id(db: Session, resignation_id: int):
     resignation = db.query(Resignation).filter(
-        Resignation.id == resignation_id,
-        Resignation.is_active == True
+        Resignation.id == resignation_id
     ).first()
 
     if not resignation:

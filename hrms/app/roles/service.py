@@ -3,7 +3,6 @@ from fastapi import HTTPException
 from app.roles.models import Role
 from app.employees.models import Employee
 
-
 # CREATE
 def create_role(db: Session, role_data):
     title = role_data.title.strip()
