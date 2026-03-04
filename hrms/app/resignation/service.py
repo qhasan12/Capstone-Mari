@@ -1,16 +1,20 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
-from sqlalchemy.exc import IntegrityError
-import psycopg2
 from .models import Resignation, ClearanceRecord
 from app.employees.models import Employee
 
-# heloooooooooooooooooooooooooooo
 
 def test():
-    return 1+2
+    return 1 + 2
+
+
+# =====================================================
+# RESIGNATION
+# =====================================================
+
 # CREATE
 def create_resignation(db: Session, data):
+
     employee = db.query(Employee).filter(Employee.id == data.employee_id).first()
     if not employee:
         raise HTTPException(status_code=404, detail="Employee not found")
@@ -32,20 +36,23 @@ def create_resignation(db: Session, data):
     )
 
     db.add(resignation)
-    db.commit()
-    db.refresh(resignation)
+    db.flush()
 
     clearance = ClearanceRecord(resignation_id=resignation.id)
     db.add(clearance)
+
     db.commit()
+    db.refresh(resignation)
 
     return resignation
 
 
 # GET BY ID
 def get_resignation_by_id(db: Session, resignation_id: int):
+
     resignation = db.query(Resignation).filter(
-        Resignation.id == resignation_id
+        Resignation.id == resignation_id,
+        Resignation.is_active == True
     ).first()
 
     if not resignation:
@@ -56,6 +63,7 @@ def get_resignation_by_id(db: Session, resignation_id: int):
 
 # GET ALL
 def get_all_resignations(db: Session):
+
     return db.query(Resignation).filter(
         Resignation.is_active == True
     ).all()
@@ -63,6 +71,7 @@ def get_all_resignations(db: Session):
 
 # PATCH UPDATE
 def update_resignation(db: Session, resignation_id: int, data):
+
     resignation = get_resignation_by_id(db, resignation_id)
 
     update_data = data.dict(exclude_unset=True)
@@ -83,14 +92,24 @@ def update_resignation(db: Session, resignation_id: int, data):
 
 # SOFT DELETE
 def deactivate_resignation(db: Session, resignation_id: int):
+
     resignation = get_resignation_by_id(db, resignation_id)
+
     resignation.is_active = False
+
     db.commit()
+    db.refresh(resignation)
+
     return resignation
 
 
-# UPDATE CLEARANCE
-def update_clearance(db: Session, resignation_id: int, data):
+# =====================================================
+# CLEARANCE
+# =====================================================
+
+# GET CLEARANCE BY RESIGNATION
+def get_clearance_by_resignation_id(db: Session, resignation_id: int):
+
     clearance = db.query(ClearanceRecord).filter(
         ClearanceRecord.resignation_id == resignation_id,
         ClearanceRecord.is_active == True
@@ -99,17 +118,41 @@ def update_clearance(db: Session, resignation_id: int, data):
     if not clearance:
         raise HTTPException(status_code=404, detail="Clearance record not found")
 
+    return clearance
+
+
+# UPDATE CLEARANCE
+def update_clearance(db: Session, resignation_id: int, data):
+
+    clearance = get_clearance_by_resignation_id(db, resignation_id)
+
     update_data = data.dict(exclude_unset=True)
 
     for key, value in update_data.items():
         setattr(clearance, key, value)
 
+    # auto calculate clearance completion
     if (
         clearance.laptop_returned and
         clearance.access_revoked and
         clearance.email_deactivated
     ):
         clearance.clearance_completed = True
+    else:
+        clearance.clearance_completed = False
+
+    db.commit()
+    db.refresh(clearance)
+
+    return clearance
+
+
+# SOFT DELETE CLEARANCE
+def deactivate_clearance(db: Session, resignation_id: int):
+
+    clearance = get_clearance_by_resignation_id(db, resignation_id)
+
+    clearance.is_active = False
 
     db.commit()
     db.refresh(clearance)
