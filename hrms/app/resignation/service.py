@@ -6,6 +6,9 @@ from .models import Resignation, ClearanceRecord
 from app.employees.models import Employee
 
 # heloooooooooooooooooooooooooooo
+
+def test():
+    return 1+2
 # CREATE
 def create_resignation(db: Session, data):
     employee = db.query(Employee).filter(Employee.id == data.employee_id).first()
