@@ -112,3 +112,8 @@ class Employee(Base):
         back_populates="employee",
         uselist=False
     )
+    auth_user = relationship(
+        "AuthUser",
+        back_populates="employee",
+        uselist=False
+    )

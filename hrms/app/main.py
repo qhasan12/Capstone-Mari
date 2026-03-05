@@ -13,6 +13,7 @@ from app.departments import models as department_models
 from app.employees import models as employee_models
 from app.hiring import models as hiring_models
 from app.roles import models as role_models
+from app.auth.models import AuthUser
 
 # Routers
 from app.leave.routes import router as leave_router
@@ -23,10 +24,16 @@ from app.employees.routes import router as employee_router
 from app.hiring.routes import router as hiring_router
 from app.roles.routes import router as role_router
 from app.training.routes import router as training_router
+from app.auth.routes import router as auth_router
 
 
-app = FastAPI(title="HRMS API")
+# ✅ CREATE APP HERE
+app = FastAPI(title="HRMS API", version="1.0")
 
+
+# ==============================
+# Global Exception Handlers
+# ==============================
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
@@ -41,70 +48,47 @@ async def http_exception_handler(request: Request, exc: HTTPException):
     )
 
 
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+
 @app.exception_handler(RequestValidationError)
-async def validation_exception_handler(request: Request, exc: RequestValidationError):
+async def validation_exception_handler(request, exc):
     return JSONResponse(
-        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-        content=APIResponse(
-            code=422,
-            message="Validation error",
-            data=None,
-            errors=exc.errors()
-        ).model_dump()
+        status_code=422,
+        content={
+            "code": 422,
+            "message": "Validation error",
+            "data": None,
+            "errors": exc.errors()
+        }
     )
 
 
-# Create tables
-Base.metadata.create_all(bind=engine)
+# ==============================
+# DB Connection Check
+# ==============================
+
 print("CONNECTED TO:", engine.url)
 
 
-# Register routers (ONLY ONCE EACH)
+# ==============================
+# Register Routers
+# ==============================
 
-app.include_router(
-    leave_router,
-    prefix="/api/v1/leaves",
-    tags=["Leave"]
-)
+app.include_router(auth_router, prefix="/api/v1/auth", tags=["Authentication"])
 
-app.include_router(
-    onboarding_router,
-    prefix="/api/v1/onboarding",
-    tags=["Onboarding"]
-)
+app.include_router(leave_router, prefix="/api/v1/leaves", tags=["Leave"])
 
-app.include_router(
-    resignation_router,
-    prefix="/api/v1/resignations",
-    tags=["Resignation"]
-)
+app.include_router(onboarding_router, prefix="/api/v1/onboarding", tags=["Onboarding"])
 
-app.include_router(
-    hiring_router,
-    prefix="/api/v1/hiring",
-    tags=["Hiring"]
-)
+app.include_router(resignation_router, prefix="/api/v1/resignations", tags=["Resignation"])
 
-app.include_router(
-    role_router,
-    prefix="/api/v1/roles",
-    tags=["Roles"]
-)
+app.include_router(hiring_router, prefix="/api/v1/hiring", tags=["Hiring"])
 
-app.include_router(
-    employee_router,
-    prefix="/api/v1/employees",
-    tags=["Employees"]
-)
+app.include_router(role_router, prefix="/api/v1/roles", tags=["Roles"])
 
-app.include_router(
-    department_router,
-    prefix="/api/v1/departments",
-    tags=["Departments"]
-)
+app.include_router(employee_router, prefix="/api/v1/employees", tags=["Employees"])
 
-app.include_router(
-    training_router,
-    prefix="/api/v1/trainings",
-    tags=["Trainings"]
-)
+app.include_router(department_router, prefix="/api/v1/departments", tags=["Departments"])
+
+app.include_router(training_router, prefix="/api/v1/trainings", tags=["Trainings"])
