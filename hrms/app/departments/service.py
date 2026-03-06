@@ -4,12 +4,19 @@ from fastapi import HTTPException
 from .models import Department
 from app.hiring.models import HiringRequest
 from app.employees.models import Employee
+from app.core.rbac import ensure_superadmin
+
+# =========================
+# HELPER: ROLE CHECK
+# =========================
+
 
 
 # =========================
 # READ ALL (Active Only)
 # =========================
 def get_departments(db: Session):
+
     return (
         db.query(Department)
         .filter(Department.is_active == True)
@@ -22,15 +29,16 @@ def get_departments(db: Session):
 # READ ONE
 # =========================
 def get_department_by_id(db: Session, department_id: int):
+
     department = db.query(Department).filter(
         Department.id == department_id
     ).first()
 
     if not department:
-        raise HTTPException(status_code=404, detail="Department not found")
-
-    # if not department.is_active:
-    #     raise HTTPException(status_code=400, detail="Department is inactive")
+        raise HTTPException(
+            status_code=404,
+            detail="Department not found"
+        )
 
     return department
 
@@ -38,7 +46,11 @@ def get_department_by_id(db: Session, department_id: int):
 # =========================
 # CREATE
 # =========================
-def create_department(db: Session, data):
+def create_department(db: Session, data, current_user):
+
+    # RBAC check
+    ensure_superadmin(current_user)
+
     name = data.name.strip()
 
     existing = db.query(Department).filter(
@@ -46,7 +58,10 @@ def create_department(db: Session, data):
     ).first()
 
     if existing:
-        raise HTTPException(status_code=400, detail="Department already exists")
+        raise HTTPException(
+            status_code=400,
+            detail="Department already exists"
+        )
 
     department = Department(
         name=name,
@@ -61,15 +76,20 @@ def create_department(db: Session, data):
 
 
 # =========================
-# UPDATE (PATCH style)
+# UPDATE (PATCH)
 # =========================
-def update_department(db: Session, department_id: int, data):
+def update_department(db: Session, department_id: int, data, current_user):
+
+    # RBAC check
+    ensure_superadmin(current_user)
+
     department = get_department_by_id(db, department_id)
 
     update_data = data.model_dump(exclude_unset=True)
 
     # Handle name uniqueness
     if "name" in update_data:
+
         new_name = update_data["name"].strip()
 
         existing = db.query(Department).filter(
@@ -97,7 +117,11 @@ def update_department(db: Session, department_id: int, data):
 # =========================
 # SOFT DELETE
 # =========================
-def delete_department(db: Session, department_id: int):
+def delete_department(db: Session, department_id: int, current_user):
+
+    # RBAC check
+    ensure_superadmin(current_user)
+
     department = get_department_by_id(db, department_id)
 
     # Prevent deletion if employees exist
@@ -105,6 +129,7 @@ def delete_department(db: Session, department_id: int):
         Employee.department_id == department_id,
         Employee.is_active == True
     ).first():
+
         raise HTTPException(
             status_code=400,
             detail="Cannot deactivate department with active employees"
@@ -114,6 +139,7 @@ def delete_department(db: Session, department_id: int):
     if db.query(HiringRequest).filter(
         HiringRequest.department_id == department_id
     ).first():
+
         raise HTTPException(
             status_code=400,
             detail="Cannot deactivate department with hiring requests"

@@ -1,7 +1,8 @@
 from fastapi import FastAPI, Request, status, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
-
+from app.common.seed_roles import seed_roles
+from app.core.database import SessionLocal
 from app.core.database import engine, Base
 from app.common.schemas import APIResponse
 
@@ -14,6 +15,8 @@ from app.employees import models as employee_models
 from app.hiring import models as hiring_models
 from app.roles import models as role_models
 from app.auth.models import AuthUser
+from app.permissions import models as permission_models
+from app.training import models as training_models
 
 # Routers
 from app.leave.routes import router as leave_router
@@ -25,12 +28,22 @@ from app.hiring.routes import router as hiring_router
 from app.roles.routes import router as role_router
 from app.training.routes import router as training_router
 from app.auth.routes import router as auth_router
-
-
+from app.common.seed_permissions import seed_permissions
+from app.common.seed_role_permissions import seed_role_permissions
+from app.common.seed import seed_initial_data
 # ✅ CREATE APP HERE
 app = FastAPI(title="HRMS API", version="1.0")
+#adding seed data for roles
+@app.on_event("startup")
+def startup_event():
+    db = SessionLocal()
 
+    seed_roles(db)
+    seed_permissions(db)
+    seed_role_permissions(db)
+    seed_initial_data(db)
 
+    db.close()
 # ==============================
 # Global Exception Handlers
 # ==============================

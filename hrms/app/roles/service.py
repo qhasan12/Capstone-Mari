@@ -2,12 +2,15 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException
 from app.roles.models import Role
 from app.employees.models import Employee
+from app.core.rbac import ensure_superadmin
 
 # CREATE
 #Qamar;s comment: Added duplicate title check and default is_active to True if not provided
 def test1():
     return 1+2
-def create_role(db: Session, role_data):
+def create_role(db: Session, role_data, current_user):
+    ensure_superadmin(current_user)
+
     title = role_data.title.strip()
 
     existing = db.query(Role).filter(
@@ -60,7 +63,9 @@ def get_role_by_id(db: Session, role_id: int):
 
 
 # UPDATE (PATCH style)
-def update_role(db: Session, role_id: int, update_data):
+def update_role(db: Session, role_id: int, update_data, current_user):
+    ensure_superadmin(current_user)
+
     role = get_role_by_id(db, role_id)
 
     data = update_data.model_dump(exclude_unset=True)
@@ -90,7 +95,8 @@ def update_role(db: Session, role_id: int, update_data):
 
 
 # SOFT DELETE
-def delete_role(db: Session, role_id: int):
+def delete_role(db: Session, role_id: int, current_user):
+    ensure_superadmin(current_user)
     role = get_role_by_id(db, role_id)
 
     if not role.is_active:

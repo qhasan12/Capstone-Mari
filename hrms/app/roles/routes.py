@@ -1,14 +1,27 @@
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
+
 from app.core.database import get_db
 from app.common.schemas import APIResponse
 from app.roles import service, schemas
+from app.auth.security import get_current_user
+from app.core.rbac import ensure_superadmin
 
 router = APIRouter(tags=["Roles"])
 
 
+# =========================
+# CREATE (SA only)
+# =========================
 @router.post("/", status_code=status.HTTP_201_CREATED)
-def create_role(data: schemas.RoleCreate, db: Session = Depends(get_db)):
+def create_role(
+    data: schemas.RoleCreate,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+
+    ensure_superadmin(current_user)
+
     role = service.create_role(db, data)
 
     return APIResponse(
@@ -18,8 +31,15 @@ def create_role(data: schemas.RoleCreate, db: Session = Depends(get_db)):
     )
 
 
+# =========================
+# LIST (All authenticated users)
+# =========================
 @router.get("/", status_code=status.HTTP_200_OK)
-def list_roles(db: Session = Depends(get_db)):
+def list_roles(
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+
     roles = service.get_all_roles(db)
 
     return APIResponse(
@@ -29,8 +49,16 @@ def list_roles(db: Session = Depends(get_db)):
     )
 
 
+# =========================
+# GET ONE (All authenticated users)
+# =========================
 @router.get("/{role_id}", status_code=status.HTTP_200_OK)
-def get_role(role_id: int, db: Session = Depends(get_db)):
+def get_role(
+    role_id: int,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+
     role = service.get_role_by_id(db, role_id)
 
     return APIResponse(
@@ -40,8 +68,19 @@ def get_role(role_id: int, db: Session = Depends(get_db)):
     )
 
 
+# =========================
+# UPDATE (SA only)
+# =========================
 @router.patch("/{role_id}", status_code=status.HTTP_200_OK)
-def update_role(role_id: int, data: schemas.RoleUpdate, db: Session = Depends(get_db)):
+def update_role(
+    role_id: int,
+    data: schemas.RoleUpdate,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+
+    ensure_superadmin(current_user)
+
     role = service.update_role(db, role_id, data)
 
     return APIResponse(
@@ -51,8 +90,18 @@ def update_role(role_id: int, data: schemas.RoleUpdate, db: Session = Depends(ge
     )
 
 
+# =========================
+# DELETE (SA only)
+# =========================
 @router.delete("/{role_id}", status_code=status.HTTP_200_OK)
-def delete_role(role_id: int, db: Session = Depends(get_db)):
+def delete_role(
+    role_id: int,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+
+    ensure_superadmin(current_user)
+
     role = service.delete_role(db, role_id)
 
     return APIResponse(
