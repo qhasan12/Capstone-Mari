@@ -1,18 +1,26 @@
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
+
 from app.core.database import get_db
 from app.common.schemas import APIResponse
+from app.auth.security import get_current_user
+
 from . import service, schemas
 
-router = APIRouter()
+
+router = APIRouter(tags=["Onboarding"])
 
 
+# =========================
+# CREATE
+# =========================
 @router.post("/", status_code=status.HTTP_201_CREATED)
 def create_onboarding(
     data: schemas.OnboardingCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
 ):
-    onboarding = service.create_onboarding(db, data)
+    onboarding = service.create_onboarding(db, data, current_user)
 
     return APIResponse(
         code=status.HTTP_201_CREATED,
@@ -21,26 +29,36 @@ def create_onboarding(
     )
 
 
+# =========================
+# LIST ALL
+# =========================
 @router.get("/", status_code=status.HTTP_200_OK)
-def list_onboarding(db: Session = Depends(get_db)):
-    records = service.get_all_onboarding(db)
+def list_onboarding(
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    records = service.get_all_onboarding(db, current_user)
 
     return APIResponse(
         code=status.HTTP_200_OK,
         message="Onboarding records retrieved successfully",
         data=[
-            schemas.OnboardingResponse.model_validate(o)
-            for o in records
+            schemas.OnboardingResponse.model_validate(record)
+            for record in records
         ]
     )
 
 
+# =========================
+# GET ONE
+# =========================
 @router.get("/{onboarding_id}", status_code=status.HTTP_200_OK)
 def get_onboarding(
     onboarding_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
 ):
-    onboarding = service.get_onboarding_by_id(db, onboarding_id)
+    onboarding = service.get_onboarding_by_id(db, onboarding_id, current_user)
 
     return APIResponse(
         code=status.HTTP_200_OK,
@@ -49,13 +67,17 @@ def get_onboarding(
     )
 
 
+# =========================
+# UPDATE
+# =========================
 @router.patch("/{onboarding_id}", status_code=status.HTTP_200_OK)
 def update_onboarding(
     onboarding_id: int,
     data: schemas.OnboardingUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
 ):
-    onboarding = service.update_onboarding(db, onboarding_id, data)
+    onboarding = service.update_onboarding(db, onboarding_id, data, current_user)
 
     return APIResponse(
         code=status.HTTP_200_OK,
@@ -64,12 +86,16 @@ def update_onboarding(
     )
 
 
+# =========================
+# DELETE (SOFT DELETE)
+# =========================
 @router.delete("/{onboarding_id}", status_code=status.HTTP_200_OK)
 def delete_onboarding(
     onboarding_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
 ):
-    service.soft_delete_onboarding(db, onboarding_id)
+    service.soft_delete_onboarding(db, onboarding_id, current_user)
 
     return APIResponse(
         code=status.HTTP_200_OK,

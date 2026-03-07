@@ -1,34 +1,33 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
+
 from .models import Resignation, ClearanceRecord
 from app.employees.models import Employee
-
-
-def test():
-    return 1 + 2
+from app.core.rbac import get_current_employee
 
 
 # =====================================================
 # RESIGNATION
 # =====================================================
 
-# CREATE
-def create_resignation(db: Session, data):
+def create_resignation(db: Session, data, current_user):
 
-    employee = db.query(Employee).filter(Employee.id == data.employee_id).first()
-    if not employee:
-        raise HTTPException(status_code=404, detail="Employee not found")
+    employee = get_current_employee(db, current_user)
+
+    # Everyone can resign but only for themselves
+    if data.employee_id != employee.id:
+        raise HTTPException(403, "Can only create resignation for yourself")
 
     existing = db.query(Resignation).filter(
-        Resignation.employee_id == data.employee_id,
+        Resignation.employee_id == employee.id,
         Resignation.is_active == True
     ).first()
 
     if existing:
-        raise HTTPException(status_code=400, detail="Resignation already exists")
+        raise HTTPException(400, "Active resignation already exists")
 
     resignation = Resignation(
-        employee_id=data.employee_id,
+        employee_id=employee.id,
         resignation_date=data.resignation_date,
         notice_end_date=data.notice_end_date,
         manager_approved=False,
@@ -47,8 +46,11 @@ def create_resignation(db: Session, data):
     return resignation
 
 
-# GET BY ID
-def get_resignation_by_id(db: Session, resignation_id: int):
+# -----------------------------------------------------
+
+def get_resignation_by_id(db: Session, resignation_id: int, current_user):
+
+    employee = get_current_employee(db, current_user)
 
     resignation = db.query(Resignation).filter(
         Resignation.id == resignation_id,
@@ -56,33 +58,91 @@ def get_resignation_by_id(db: Session, resignation_id: int):
     ).first()
 
     if not resignation:
-        raise HTTPException(status_code=404, detail="Resignation not found")
+        raise HTTPException(404, "Resignation not found")
+
+    role = employee.role.title
+
+    if role in ["SA", "HR"]:
+        return resignation
+
+    if role == "MGR":
+        if resignation.employee.manager_id != employee.id and resignation.employee_id != employee.id:
+            raise HTTPException(403)
+
+    if role == "EMP":
+        if resignation.employee_id != employee.id:
+            raise HTTPException(403)
 
     return resignation
 
 
-# GET ALL
-def get_all_resignations(db: Session):
+# -----------------------------------------------------
 
-    return db.query(Resignation).filter(
+def get_all_resignations(db: Session, current_user):
+
+    employee = get_current_employee(db, current_user)
+    role = employee.role.title
+
+    if role in ["SA", "HR"]:
+        return db.query(Resignation).filter(
+            Resignation.is_active == True
+        ).all()
+
+    if role == "MGR":
+        return db.query(Resignation).join(Employee).filter(
+            (Employee.manager_id == employee.id) |
+            (Resignation.employee_id == employee.id),
+            Resignation.is_active == True
+        ).all()
+
+    if role == "EMP":
+        return db.query(Resignation).filter(
+            Resignation.employee_id == employee.id,
+            Resignation.is_active == True
+        ).all()
+
+
+# -----------------------------------------------------
+
+def update_resignation(db: Session, resignation_id: int, data, current_user):
+
+    employee = get_current_employee(db, current_user)
+
+    resignation = db.query(Resignation).filter(
+        Resignation.id == resignation_id,
         Resignation.is_active == True
-    ).all()
+    ).first()
 
+    if not resignation:
+        raise HTTPException(404, "Resignation not found")
 
-# PATCH UPDATE
-def update_resignation(db: Session, resignation_id: int, data):
+    role = employee.role.title
 
-    resignation = get_resignation_by_id(db, resignation_id)
+    # Employee withdraw
+    if role == "EMP":
 
-    update_data = data.dict(exclude_unset=True)
+        if resignation.employee_id != employee.id:
+            raise HTTPException(403)
 
-    for key, value in update_data.items():
-        setattr(resignation, key, value)
+        resignation.status = "Withdrawn"
+        resignation.is_active = False
 
-    if resignation.manager_approved:
+    # Manager approval
+    elif role == "MGR":
+
+        if resignation.employee.manager_id != employee.id:
+            raise HTTPException(403)
+
+        resignation.manager_approved = True
         resignation.status = "Approved"
-    else:
-        resignation.status = "Pending Approval"
+
+    # HR / SA full update
+    elif role in ["HR", "SA"]:
+
+        update_data = data.dict(exclude_unset=True)
+
+        for key, value in update_data.items():
+            setattr(resignation, key, value)
 
     db.commit()
     db.refresh(resignation)
@@ -90,12 +150,37 @@ def update_resignation(db: Session, resignation_id: int, data):
     return resignation
 
 
-# SOFT DELETE
-def deactivate_resignation(db: Session, resignation_id: int):
+# -----------------------------------------------------
 
-    resignation = get_resignation_by_id(db, resignation_id)
+def deactivate_resignation(db: Session, resignation_id: int, current_user):
 
-    resignation.is_active = False
+    employee = get_current_employee(db, current_user)
+
+    resignation = db.query(Resignation).filter(
+        Resignation.id == resignation_id
+    ).first()
+
+    if not resignation:
+        raise HTTPException(404)
+
+    role = employee.role.title
+
+    # Employee or Manager withdraw their own resignation
+    if role in ["EMP", "MGR"]:
+
+        if resignation.employee_id != employee.id:
+            raise HTTPException(403)
+
+        resignation.status = "Withdrawn"
+        resignation.is_active = False
+
+    # HR / SA delete any resignation
+    elif role in ["HR", "SA"]:
+
+        resignation.is_active = False
+
+    else:
+        raise HTTPException(403)
 
     db.commit()
     db.refresh(resignation)
@@ -107,8 +192,9 @@ def deactivate_resignation(db: Session, resignation_id: int):
 # CLEARANCE
 # =====================================================
 
-# GET CLEARANCE BY RESIGNATION
-def get_clearance_by_resignation_id(db: Session, resignation_id: int):
+def get_clearance_by_resignation_id(db: Session, resignation_id: int, current_user):
+
+    employee = get_current_employee(db, current_user)
 
     clearance = db.query(ClearanceRecord).filter(
         ClearanceRecord.resignation_id == resignation_id,
@@ -116,22 +202,41 @@ def get_clearance_by_resignation_id(db: Session, resignation_id: int):
     ).first()
 
     if not clearance:
-        raise HTTPException(status_code=404, detail="Clearance record not found")
+        raise HTTPException(404, "Clearance record not found")
+
+    role = employee.role.title
+    target_employee = clearance.resignation.employee
+
+    if role in ["SA", "HR"]:
+        return clearance
+
+    if role == "MGR":
+        if target_employee.manager_id != employee.id and target_employee.id != employee.id:
+            raise HTTPException(403)
+
+    if role == "EMP":
+        if target_employee.id != employee.id:
+            raise HTTPException(403)
 
     return clearance
 
+# -----------------------------------------------------
 
-# UPDATE CLEARANCE
-def update_clearance(db: Session, resignation_id: int, data):
+def update_clearance(db: Session, resignation_id: int, data, current_user):
 
-    clearance = get_clearance_by_resignation_id(db, resignation_id)
+    employee = get_current_employee(db, current_user)
+
+    if employee.role.title not in ["SA", "HR"]:
+        raise HTTPException(403)
+
+    clearance = get_clearance_by_resignation_id(db, resignation_id, current_user)
 
     update_data = data.dict(exclude_unset=True)
 
     for key, value in update_data.items():
         setattr(clearance, key, value)
 
-    # auto calculate clearance completion
+    # auto-complete clearance
     if (
         clearance.laptop_returned and
         clearance.access_revoked and
@@ -147,10 +252,39 @@ def update_clearance(db: Session, resignation_id: int, data):
     return clearance
 
 
-# SOFT DELETE CLEARANCE
-def deactivate_clearance(db: Session, resignation_id: int):
+# -----------------------------------------------------
+def get_all_clearance(db: Session, current_user):
 
-    clearance = get_clearance_by_resignation_id(db, resignation_id)
+    employee = get_current_employee(db, current_user)
+    role = employee.role.title
+
+    if role in ["SA", "HR"]:
+        return db.query(ClearanceRecord).filter(
+            ClearanceRecord.is_active == True
+        ).all()
+
+    if role == "MGR":
+        return db.query(ClearanceRecord).join(Resignation).join(Employee).filter(
+            (Employee.manager_id == employee.id) |
+            (Resignation.employee_id == employee.id),
+            ClearanceRecord.is_active == True
+        ).all()
+
+    if role == "EMP":
+        return db.query(ClearanceRecord).join(Resignation).filter(
+            Resignation.employee_id == employee.id,
+            ClearanceRecord.is_active == True
+        ).all()
+#------------------------------------------------------
+
+def deactivate_clearance(db: Session, resignation_id: int, current_user):
+
+    employee = get_current_employee(db, current_user)
+
+    if employee.role.title not in ["SA", "HR"]:
+        raise HTTPException(403)
+
+    clearance = get_clearance_by_resignation_id(db, resignation_id, current_user)
 
     clearance.is_active = False
 

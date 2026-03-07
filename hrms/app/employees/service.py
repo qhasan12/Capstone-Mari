@@ -4,67 +4,109 @@ from sqlalchemy.orm import Session
 from .models import Employee
 from app.departments.models import Department
 from app.roles.models import Role
+from app.core.rbac import get_current_employee
 
 
 # =========================
-# READ ALL (Active Only)
+# READ ALL
 # =========================
-def get_employees(db: Session):
-    return (
-        db.query(Employee)
-        .filter(Employee.is_active == True)
-        .order_by(Employee.id)
-        .all()
-    )
+def get_employees(db: Session, current_user):
+
+    current_employee = get_current_employee(db, current_user)
+    role = current_employee.role.title
+
+    # SA & HR -> see all
+    if role in ["SA", "HR"]:
+        return db.query(Employee).filter(
+            Employee.is_active == True
+        ).all()
+
+    # Manager -> only team
+    if role == "MGR":
+        return db.query(Employee).filter(
+            Employee.manager_id == current_employee.id,
+            Employee.is_active == True
+        ).all()
+
+    raise HTTPException(403, "Not allowed to view employees")
 
 
 # =========================
 # READ ONE
 # =========================
-def get_employee_by_id(db: Session, employee_id: int):
+def get_employee_by_id(db: Session, employee_id: int, current_user):
+
+    current_employee = get_current_employee(db, current_user)
+    role = current_employee.role.title
+
     employee = db.query(Employee).filter(
-        Employee.id == employee_id
+        Employee.id == employee_id,
+        Employee.is_active == True
     ).first()
 
     if not employee:
-        raise HTTPException(status_code=404, detail="Employee not found")
+        raise HTTPException(404, "Employee not found")
 
-    return employee
+    if role in ["SA", "HR"]:
+        return employee
+
+    if role == "MGR" and employee.manager_id == current_employee.id or employee.id == current_employee.id:
+        return employee
+
+    if role == "EMP" and employee.id == current_employee.id:
+        return employee
+
+    raise HTTPException(403, "Access denied")
 
 
 # =========================
 # CREATE
 # =========================
-def create_employee(db: Session, data):
+def create_employee(db: Session, data, current_user):
+
+    current_employee = get_current_employee(db, current_user)
+    role = current_employee.role.title
+
+    if role not in ["SA", "HR"]:
+        raise HTTPException(403, "Not allowed to create employees")
+
     full_name = data.full_name.strip()
 
-    # Duplicate email check
+    # Email uniqueness
     if db.query(Employee).filter(Employee.email == data.email).first():
-        raise HTTPException(status_code=400, detail="Email already exists")
+        raise HTTPException(400, "Email already exists")
 
-    # Validate department
-    if not db.query(Department).filter(
+    # Department validation
+    department = db.query(Department).filter(
         Department.id == data.department_id,
         Department.is_active == True
-    ).first():
-        raise HTTPException(status_code=400, detail="Invalid or inactive department")
+    ).first()
 
-    # Validate role
-    if not db.query(Role).filter(
+    if not department:
+        raise HTTPException(400, "Invalid or inactive department")
+
+    # Role validation
+    role_obj = db.query(Role).filter(
         Role.id == data.role_id,
         Role.is_active == True
-    ).first():
-        raise HTTPException(status_code=400, detail="Invalid or inactive role")
+    ).first()
 
-    # Validate manager
+    if not role_obj:
+        raise HTTPException(400, "Invalid or inactive role")
+
+    # Manager validation
     if data.manager_id:
+
+        if data.manager_id == current_employee.id:
+            raise HTTPException(400, "Employee cannot be their own manager")
+
         manager = db.query(Employee).filter(
             Employee.id == data.manager_id,
             Employee.is_active == True
         ).first()
 
         if not manager:
-            raise HTTPException(status_code=400, detail="Invalid manager")
+            raise HTTPException(400, "Invalid manager")
 
     employee = Employee(**data.model_dump())
     employee.full_name = full_name
@@ -77,56 +119,74 @@ def create_employee(db: Session, data):
 
 
 # =========================
-# UPDATE (PATCH Style)
+# UPDATE
 # =========================
-def update_employee(db: Session, employee_id: int, data):
-    employee = get_employee_by_id(db, employee_id)
+def update_employee(db: Session, employee_id: int, data, current_user):
+
+    current_employee = get_current_employee(db, current_user)
+    role = current_employee.role.title
+
+    employee = get_employee_by_id(db, employee_id, current_user)
+
+    if role not in ["SA", "HR"]:
+        if not (role == "EMP" and employee.id == current_employee.id):
+            raise HTTPException(403, "Not allowed to update this employee")
 
     update_data = data.model_dump(exclude_unset=True)
 
-    # Trim name if provided
     if "full_name" in update_data:
         update_data["full_name"] = update_data["full_name"].strip()
 
     # Email uniqueness
     if "email" in update_data:
-        if db.query(Employee).filter(
+
+        exists = db.query(Employee).filter(
             Employee.email == update_data["email"],
             Employee.id != employee_id
-        ).first():
-            raise HTTPException(status_code=400, detail="Email already exists")
+        ).first()
+
+        if exists:
+            raise HTTPException(400, "Email already exists")
 
     # Department validation
     if "department_id" in update_data:
-        if not db.query(Department).filter(
+
+        department = db.query(Department).filter(
             Department.id == update_data["department_id"],
             Department.is_active == True
-        ).first():
-            raise HTTPException(status_code=400, detail="Invalid department")
+        ).first()
+
+        if not department:
+            raise HTTPException(400, "Invalid department")
 
     # Role validation
     if "role_id" in update_data:
-        if not db.query(Role).filter(
+
+        role_obj = db.query(Role).filter(
             Role.id == update_data["role_id"],
             Role.is_active == True
-        ).first():
-            raise HTTPException(status_code=400, detail="Invalid role")
+        ).first()
+
+        if not role_obj:
+            raise HTTPException(400, "Invalid role")
 
     # Manager validation
     if "manager_id" in update_data:
+
         manager_id = update_data["manager_id"]
 
         if manager_id == employee_id:
-            raise HTTPException(status_code=400, detail="Employee cannot be their own manager")
+            raise HTTPException(400, "Employee cannot be their own manager")
 
         if manager_id:
+
             manager = db.query(Employee).filter(
                 Employee.id == manager_id,
                 Employee.is_active == True
             ).first()
 
             if not manager:
-                raise HTTPException(status_code=400, detail="Invalid manager")
+                raise HTTPException(400, "Invalid manager")
 
     for key, value in update_data.items():
         setattr(employee, key, value)
@@ -138,13 +198,25 @@ def update_employee(db: Session, employee_id: int, data):
 
 
 # =========================
-# SOFT DELETE
+# DELETE (SOFT DELETE)
 # =========================
-def delete_employee(db: Session, employee_id: int):
-    employee = get_employee_by_id(db, employee_id)
+def delete_employee(db: Session, employee_id: int, current_user):
+
+    current_employee = get_current_employee(db, current_user)
+    role = current_employee.role.title
+
+    if role not in ["SA", "HR"]:
+        raise HTTPException(403, "Not allowed to delete employees")
+
+    employee = db.query(Employee).filter(
+        Employee.id == employee_id
+    ).first()
+
+    if not employee:
+        raise HTTPException(404, "Employee not found")
 
     if not employee.is_active:
-        raise HTTPException(status_code=400, detail="Employee already inactive")
+        raise HTTPException(400, "Employee already inactive")
 
     employee.is_active = False
 

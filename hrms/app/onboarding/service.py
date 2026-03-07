@@ -1,10 +1,19 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
+
+from app.core.rbac import get_current_employee
 from .models import Onboarding
 
 
 # CREATE
-def create_onboarding(db: Session, data):
+def create_onboarding(db: Session, data, current_user):
+
+    employee = get_current_employee(db, current_user)
+    role = employee.role.title
+
+    if role not in ["SA", "HR"]:
+        raise HTTPException(403, "Not allowed to create onboarding")
+
     existing = db.query(Onboarding).filter(
         Onboarding.employee_id == data.employee_id,
         Onboarding.is_active == True
@@ -12,8 +21,8 @@ def create_onboarding(db: Session, data):
 
     if existing:
         raise HTTPException(
-            status_code=400,
-            detail="Onboarding already exists for this employee"
+            400,
+            "Onboarding already exists for this employee"
         )
 
     onboarding = Onboarding(
@@ -28,30 +37,56 @@ def create_onboarding(db: Session, data):
     return onboarding
 
 
-# GET BY ID
-def get_onboarding_by_id(db: Session, onboarding_id: int):
+# GET ONE
+def get_onboarding_by_id(db: Session, onboarding_id: int, current_user):
+
+    employee = get_current_employee(db, current_user)
+    role = employee.role.title
+
+    if role not in ["SA", "HR"]:
+        raise HTTPException(403, "Not allowed to view onboarding")
+
     onboarding = db.query(Onboarding).filter(
         Onboarding.id == onboarding_id
     ).first()
 
     if not onboarding:
-        raise HTTPException(status_code=404, detail="Onboarding not found")
+        raise HTTPException(404, "Onboarding not found")
 
     return onboarding
 
 
 # GET ALL
-def get_all_onboarding(db: Session):
+def get_all_onboarding(db: Session, current_user):
+
+    employee = get_current_employee(db, current_user)
+    role = employee.role.title
+
+    if role not in ["SA", "HR"]:
+        raise HTTPException(403, "Not allowed to view onboarding")
+
     return db.query(Onboarding).filter(
         Onboarding.is_active == True
     ).all()
 
 
-# PATCH UPDATE
-def update_onboarding(db: Session, onboarding_id: int, data):
-    onboarding = get_onboarding_by_id(db, onboarding_id)
+# UPDATE
+def update_onboarding(db: Session, onboarding_id: int, data, current_user):
 
-    update_data = data.dict(exclude_unset=True)
+    employee = get_current_employee(db, current_user)
+    role = employee.role.title
+
+    if role not in ["SA", "HR"]:
+        raise HTTPException(403, "Not allowed to update onboarding")
+
+    onboarding = db.query(Onboarding).filter(
+        Onboarding.id == onboarding_id
+    ).first()
+
+    if not onboarding:
+        raise HTTPException(404, "Onboarding not found")
+
+    update_data = data.model_dump(exclude_unset=True)
 
     for field, value in update_data.items():
         setattr(onboarding, field, value)
@@ -72,9 +107,24 @@ def update_onboarding(db: Session, onboarding_id: int, data):
     return onboarding
 
 
-# SOFT DELETE
-def soft_delete_onboarding(db: Session, onboarding_id: int):
-    onboarding = get_onboarding_by_id(db, onboarding_id)
+# DELETE
+def soft_delete_onboarding(db: Session, onboarding_id: int, current_user):
+
+    employee = get_current_employee(db, current_user)
+    role = employee.role.title
+
+    if role not in ["SA", "HR"]:
+        raise HTTPException(403, "Not allowed to delete onboarding")
+
+    onboarding = db.query(Onboarding).filter(
+        Onboarding.id == onboarding_id
+    ).first()
+
+    if not onboarding:
+        raise HTTPException(404, "Onboarding not found")
+
     onboarding.is_active = False
+
     db.commit()
+
     return onboarding

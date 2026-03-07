@@ -42,7 +42,7 @@ class LeaveRequest(Base):
     end_date = Column(Date)
     reason = Column(String(500))
     status = Column(String(50))
-    is_active = Column(Boolean, default=False)
+    is_active = Column(Boolean, default=True)
 
     employee = relationship("Employee", back_populates="leave_requests")
     leave_type = relationship("LeaveType", back_populates="requests")

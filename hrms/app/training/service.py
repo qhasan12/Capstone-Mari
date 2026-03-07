@@ -1,17 +1,25 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
+
 from .models import TrainingRecord
 from app.employees.models import Employee
+from app.core.rbac import get_current_employee
 
 
 # CREATE
-def create_training(db: Session, data):
-    # Validate employee exists
-    employee = db.query(Employee).filter(
+def create_training(db: Session, data, current_user):
+
+    employee = get_current_employee(db, current_user)
+    role = employee.role.title
+
+    if role not in ["SA", "HR"]:
+        raise HTTPException(403, "Not allowed to create training")
+
+    emp = db.query(Employee).filter(
         Employee.id == data.employee_id
     ).first()
 
-    if not employee:
+    if not emp:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Employee not found"
@@ -27,14 +35,20 @@ def create_training(db: Session, data):
 
 
 # READ ALL
-def get_trainings(db: Session):
+def get_trainings(db: Session, current_user):
+
+    # Everyone logged in can view
+    get_current_employee(db, current_user)
+
     trainings = db.query(TrainingRecord).all()
     return trainings
 
 
 # READ ONE
-#is_active is not checked here to allow retrieval of both active and inactive records for auditing purposes.
-def get_training_by_id(db: Session, training_id: int):
+def get_training_by_id(db: Session, training_id: int, current_user):
+
+    get_current_employee(db, current_user)
+
     training = db.query(TrainingRecord).filter(
         TrainingRecord.id == training_id
     ).first()
@@ -48,25 +62,38 @@ def get_training_by_id(db: Session, training_id: int):
     return training
 
 
-# UPDATE (PATCH)
-def update_training(db: Session, training_id: int, data):
-    training = get_training_by_id(db, training_id)
+# UPDATE
+def update_training(db: Session, training_id: int, data, current_user):
+
+    employee = get_current_employee(db, current_user)
+    role = employee.role.title
+
+    if role not in ["SA", "HR"]:
+        raise HTTPException(403, "Not allowed to update training")
+
+    training = db.query(TrainingRecord).filter(
+        TrainingRecord.id == training_id
+    ).first()
+
+    if not training:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Training not found"
+        )
 
     update_data = data.model_dump(exclude_unset=True)
 
-    # Validate employee if being updated
     if "employee_id" in update_data:
-        employee = db.query(Employee).filter(
+        emp = db.query(Employee).filter(
             Employee.id == update_data["employee_id"]
         ).first()
 
-        if not employee:
+        if not emp:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Employee not found"
             )
 
-    # Update fields (including is_active if provided)
     for key, value in update_data.items():
         setattr(training, key, value)
 
@@ -76,9 +103,24 @@ def update_training(db: Session, training_id: int, data):
     return training
 
 
-# soft delete
-def delete_training(db: Session, training_id: int):
-    training = get_training_by_id(db, training_id)
+# DELETE (SOFT DELETE)
+def delete_training(db: Session, training_id: int, current_user):
+
+    employee = get_current_employee(db, current_user)
+    role = employee.role.title
+
+    if role not in ["SA", "HR"]:
+        raise HTTPException(403, "Not allowed to delete training")
+
+    training = db.query(TrainingRecord).filter(
+        TrainingRecord.id == training_id
+    ).first()
+
+    if not training:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Training not found"
+        )
 
     if not training.is_active:
         raise HTTPException(

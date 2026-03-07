@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
+
 from app.hiring.models import HiringRequest, JobPosting
 from app.hiring.schemas import (
     HiringRequestCreate,
@@ -7,12 +8,23 @@ from app.hiring.schemas import (
     JobPostingCreate,
     JobPostingUpdate
 )
+
+from app.core.rbac import get_current_employee
+
+
 # -----------------------
 # Hiring Request Services
 # -----------------------
 
 # CREATE
-def create_hiring_request(db: Session, hiring_data: HiringRequestCreate):
+def create_hiring_request(db: Session, hiring_data: HiringRequestCreate, current_user):
+
+    employee = get_current_employee(db, current_user)
+    role = employee.role.title
+
+    if role not in ["SA", "HR"]:
+        raise HTTPException(403, "Not allowed to create hiring requests")
+
     hiring_request = HiringRequest(**hiring_data.model_dump())
 
     db.add(hiring_request)
@@ -22,8 +34,15 @@ def create_hiring_request(db: Session, hiring_data: HiringRequestCreate):
     return hiring_request
 
 
-# READ ALL (only active)
-def get_all_hiring_requests(db: Session):
+# READ ALL
+def get_all_hiring_requests(db: Session, current_user):
+
+    employee = get_current_employee(db, current_user)
+    role = employee.role.title
+
+    if role not in ["SA", "HR"]:
+        raise HTTPException(403, "Not allowed to view hiring requests")
+
     return (
         db.query(HiringRequest)
         .filter(HiringRequest.is_active == True)
@@ -33,31 +52,51 @@ def get_all_hiring_requests(db: Session):
 
 
 # READ ONE
-def get_hiring_request_by_id(db: Session, hiring_id: int):
+def get_hiring_request_by_id(db: Session, hiring_id: int, current_user):
+
+    employee = get_current_employee(db, current_user)
+    role = employee.role.title
+
+    if role not in ["SA", "HR"]:
+        raise HTTPException(403, "Not allowed to view hiring requests")
+
     hiring = (
         db.query(HiringRequest)
-        .filter(
-            HiringRequest.id == hiring_id
-        )
+        .filter(HiringRequest.id == hiring_id)
         .first()
     )
 
     if not hiring:
-        raise HTTPException(status_code=404, detail="Hiring request not found")
+        raise HTTPException(404, "Hiring request not found")
 
     return hiring
 
 
-# UPDATE (PATCH)
-def update_hiring_request(db: Session, hiring_id: int, update_data: HiringRequestUpdate):
+# UPDATE
+def update_hiring_request(
+    db: Session,
+    hiring_id: int,
+    update_data: HiringRequestUpdate,
+    current_user
+):
 
-    hiring = get_hiring_request_by_id(db, hiring_id)
+    employee = get_current_employee(db, current_user)
+    role = employee.role.title
+
+    if role not in ["SA", "HR"]:
+        raise HTTPException(403, "Not allowed to update hiring requests")
+
+    hiring = (
+        db.query(HiringRequest)
+        .filter(HiringRequest.id == hiring_id)
+        .first()
+    )
 
     if not hiring:
-        raise HTTPException(status_code=404, detail="Hiring request not found")
+        raise HTTPException(404, "Hiring request not found")
 
     if hiring.status == "Closed":
-        raise HTTPException(status_code=400, detail="Cannot modify a closed hiring request")
+        raise HTTPException(400, "Cannot modify a closed hiring request")
 
     update_fields = update_data.model_dump(exclude_unset=True)
 
@@ -70,8 +109,14 @@ def update_hiring_request(db: Session, hiring_id: int, update_data: HiringReques
     return hiring
 
 
-# SOFT DELETE
-def delete_hiring_request(db: Session, hiring_id: int):
+# DELETE (SOFT DELETE)
+def delete_hiring_request(db: Session, hiring_id: int, current_user):
+
+    employee = get_current_employee(db, current_user)
+    role = employee.role.title
+
+    if role not in ["SA", "HR"]:
+        raise HTTPException(403, "Not allowed to delete hiring requests")
 
     hiring = (
         db.query(HiringRequest)
@@ -83,17 +128,27 @@ def delete_hiring_request(db: Session, hiring_id: int):
     )
 
     if not hiring:
-        raise HTTPException(status_code=404, detail="Hiring request not found")
+        raise HTTPException(404, "Hiring request not found")
 
     hiring.is_active = False
+
     db.commit()
 
     return {"message": "Hiring request deactivated successfully"}
+
+
 # -----------------------
 # Job Posting Services
 # -----------------------
+
 # CREATE
-def create_job_posting(db: Session, job_data: JobPostingCreate):
+def create_job_posting(db: Session, job_data: JobPostingCreate, current_user):
+
+    employee = get_current_employee(db, current_user)
+    role = employee.role.title
+
+    if role not in ["SA", "HR"]:
+        raise HTTPException(403, "Not allowed to create job postings")
 
     hiring = db.query(HiringRequest).filter(
         HiringRequest.id == job_data.hiring_request_id,
@@ -101,12 +156,12 @@ def create_job_posting(db: Session, job_data: JobPostingCreate):
     ).first()
 
     if not hiring:
-        raise HTTPException(status_code=404, detail="Hiring request not found")
+        raise HTTPException(404, "Hiring request not found")
 
     if job_data.closing_date < job_data.posted_date:
         raise HTTPException(
-            status_code=400,
-            detail="Closing date cannot be before posted date"
+            400,
+            "Closing date cannot be before posted date"
         )
 
     job_posting = JobPosting(**job_data.model_dump())
@@ -119,7 +174,11 @@ def create_job_posting(db: Session, job_data: JobPostingCreate):
 
 
 # READ ALL
-def get_all_job_postings(db: Session):
+def get_all_job_postings(db: Session, current_user):
+
+    # Everyone logged in can view
+    get_current_employee(db, current_user)
+
     return (
         db.query(JobPosting)
         .filter(JobPosting.is_active == True)
@@ -129,37 +188,52 @@ def get_all_job_postings(db: Session):
 
 
 # READ ONE
-def get_job_posting_by_id(db: Session, posting_id: int):
+def get_job_posting_by_id(db: Session, posting_id: int, current_user):
+
+    get_current_employee(db, current_user)
 
     posting = (
         db.query(JobPosting)
-        .filter(
-            JobPosting.id == posting_id
-        )
+        .filter(JobPosting.id == posting_id)
         .first()
     )
 
     if not posting:
-        raise HTTPException(status_code=404, detail="Job posting not found")
+        raise HTTPException(404, "Job posting not found")
 
     return posting
 
 
 # UPDATE
-def update_job_posting(db: Session, posting_id: int, update_data: JobPostingUpdate):
+def update_job_posting(
+    db: Session,
+    posting_id: int,
+    update_data: JobPostingUpdate,
+    current_user
+):
 
-    posting = get_job_posting_by_id(db, posting_id)
+    employee = get_current_employee(db, current_user)
+    role = employee.role.title
+
+    if role not in ["SA", "HR"]:
+        raise HTTPException(403, "Not allowed to update job postings")
+
+    posting = (
+        db.query(JobPosting)
+        .filter(JobPosting.id == posting_id)
+        .first()
+    )
 
     if not posting:
-        raise HTTPException(status_code=404, detail="Job posting not found")
+        raise HTTPException(404, "Job posting not found")
 
     update_fields = update_data.model_dump(exclude_unset=True)
 
     if "closing_date" in update_fields:
         if posting.posted_date and update_fields["closing_date"] < posting.posted_date:
             raise HTTPException(
-                status_code=400,
-                detail="Closing date cannot be before posted date"
+                400,
+                "Closing date cannot be before posted date"
             )
 
     for field, value in update_fields.items():
@@ -171,8 +245,14 @@ def update_job_posting(db: Session, posting_id: int, update_data: JobPostingUpda
     return posting
 
 
-# SOFT DELETE
-def delete_job_posting(db: Session, posting_id: int):
+# DELETE (SOFT DELETE)
+def delete_job_posting(db: Session, posting_id: int, current_user):
+
+    employee = get_current_employee(db, current_user)
+    role = employee.role.title
+
+    if role not in ["SA", "HR"]:
+        raise HTTPException(403, "Not allowed to delete job postings")
 
     posting = (
         db.query(JobPosting)
@@ -184,9 +264,10 @@ def delete_job_posting(db: Session, posting_id: int):
     )
 
     if not posting:
-        raise HTTPException(status_code=404, detail="Job posting not found")
+        raise HTTPException(404, "Job posting not found")
 
     posting.is_active = False
+
     db.commit()
 
     return {"message": "Job posting deactivated successfully"}

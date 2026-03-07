@@ -1,15 +1,24 @@
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
+
 from app.core.database import get_db
 from app.common.schemas import APIResponse
+from app.auth.security import get_current_user
+
 from . import schemas, service
+
 
 router = APIRouter(tags=["Training"])
 
 
+# CREATE
 @router.post("/", status_code=status.HTTP_201_CREATED)
-def create_training(data: schemas.TrainingCreate, db: Session = Depends(get_db)):
-    training = service.create_training(db, data)
+def create_training(
+    data: schemas.TrainingCreate,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    training = service.create_training(db, data, current_user)
 
     return APIResponse(
         code=status.HTTP_201_CREATED,
@@ -18,9 +27,13 @@ def create_training(data: schemas.TrainingCreate, db: Session = Depends(get_db))
     )
 
 
+# LIST
 @router.get("/", status_code=status.HTTP_200_OK)
-def list_trainings(db: Session = Depends(get_db)):
-    trainings = service.get_trainings(db)
+def list_trainings(
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    trainings = service.get_trainings(db, current_user)
 
     return APIResponse(
         code=status.HTTP_200_OK,
@@ -29,9 +42,14 @@ def list_trainings(db: Session = Depends(get_db)):
     )
 
 
+# GET ONE
 @router.get("/{training_id}", status_code=status.HTTP_200_OK)
-def get_training(training_id: int, db: Session = Depends(get_db)):
-    training = service.get_training_by_id(db, training_id)
+def get_training(
+    training_id: int,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    training = service.get_training_by_id(db, training_id, current_user)
 
     return APIResponse(
         code=status.HTTP_200_OK,
@@ -40,13 +58,15 @@ def get_training(training_id: int, db: Session = Depends(get_db)):
     )
 
 
+# UPDATE
 @router.patch("/{training_id}", status_code=status.HTTP_200_OK)
 def update_training(
     training_id: int,
     data: schemas.TrainingUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
 ):
-    training = service.update_training(db, training_id, data)
+    training = service.update_training(db, training_id, data, current_user)
 
     return APIResponse(
         code=status.HTTP_200_OK,
@@ -55,9 +75,14 @@ def update_training(
     )
 
 
+# DELETE
 @router.delete("/{training_id}", status_code=status.HTTP_200_OK)
-def delete_training(training_id: int, db: Session = Depends(get_db)):
-    service.delete_training(db, training_id)
+def delete_training(
+    training_id: int,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    service.delete_training(db, training_id, current_user)
 
     return APIResponse(
         code=status.HTTP_200_OK,
