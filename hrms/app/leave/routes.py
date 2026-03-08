@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
+from math import ceil
 
 from app.core.database import get_db
 from app.common.schemas import APIResponse
@@ -31,18 +32,34 @@ def create_leave_type(
 
 @router.get("/types", status_code=status.HTTP_200_OK)
 def list_leave_types(
+    page: int = 1,
+    per_page: int = 10,
+    search: str | None = None,
+    is_active: bool | None = None,
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
-    leave_types = service.get_all_leave_types(db, current_user)
+
+    page = max(page, 1)
+    per_page = min(max(per_page, 1), 100)
+
+    leave_types, total = service.get_all_leave_types(
+        db, current_user, page, per_page, search, is_active
+    )
 
     return APIResponse(
         code=200,
         message="Leave types retrieved successfully",
-        data=[
-            schemas.LeaveTypeResponse.model_validate(lt)
-            for lt in leave_types
-        ]
+        data={
+            "items": [
+                schemas.LeaveTypeResponse.model_validate(lt)
+                for lt in leave_types
+            ],
+            "total": total,
+            "page": page,
+            "per_page": per_page,
+            "pages": ceil(total / per_page)
+        }
     )
 
 
@@ -116,6 +133,41 @@ def create_leave_balance(
     )
 
 
+# HR / SA / Manager Dashboard
+@router.get("/balances", status_code=status.HTTP_200_OK)
+def list_balances(
+    page: int = 1,
+    per_page: int = 10,
+    search: str | None = None,
+    is_active: bool | None = None,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+
+    page = max(page, 1)
+    per_page = min(max(per_page, 1), 100)
+
+    balances, total = service.get_all_balances(
+        db, current_user, page, per_page, search, is_active
+    )
+
+    return APIResponse(
+        code=200,
+        message="Leave balances retrieved successfully",
+        data={
+            "items": [
+                schemas.LeaveBalanceResponse.model_validate(b)
+                for b in balances
+            ],
+            "total": total,
+            "page": page,
+            "per_page": per_page,
+            "pages": ceil(total / per_page)
+        }
+    )
+
+
+# Single employee balances
 @router.get("/balances/{employee_id}", status_code=status.HTTP_200_OK)
 def get_employee_balances(
     employee_id: int,
@@ -161,20 +213,33 @@ def create_leave_request(
 
 @router.get("/requests", status_code=status.HTTP_200_OK)
 def list_leave_requests(
+    page: int = 1,
+    per_page: int = 10,
+    is_active: bool | None = None,
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
-    requests = service.get_leave_requests(
-        db, current_user
+
+    page = max(page, 1)
+    per_page = min(max(per_page, 1), 100)
+
+    requests, total = service.get_leave_requests(
+        db, current_user, page, per_page, is_active
     )
 
     return APIResponse(
         code=200,
         message="Leave requests retrieved successfully",
-        data=[
-            schemas.LeaveRequestResponse.model_validate(r)
-            for r in requests
-        ]
+        data={
+            "items": [
+                schemas.LeaveRequestResponse.model_validate(r)
+                for r in requests
+            ],
+            "total": total,
+            "page": page,
+            "per_page": per_page,
+            "pages": ceil(total / per_page)
+        }
     )
 
 

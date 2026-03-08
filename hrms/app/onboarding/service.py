@@ -1,17 +1,19 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
+from sqlalchemy import or_
 
 from app.core.rbac import get_current_employee
 from .models import Onboarding
 
 
+# =====================================================
 # CREATE
+# =====================================================
 def create_onboarding(db: Session, data, current_user):
 
     employee = get_current_employee(db, current_user)
-    role = employee.role.title
 
-    if role not in ["SA", "HR"]:
+    if employee.role.title not in ["SA", "HR"]:
         raise HTTPException(403, "Not allowed to create onboarding")
 
     existing = db.query(Onboarding).filter(
@@ -37,13 +39,14 @@ def create_onboarding(db: Session, data, current_user):
     return onboarding
 
 
+# =====================================================
 # GET ONE
+# =====================================================
 def get_onboarding_by_id(db: Session, onboarding_id: int, current_user):
 
     employee = get_current_employee(db, current_user)
-    role = employee.role.title
 
-    if role not in ["SA", "HR"]:
+    if employee.role.title not in ["SA", "HR"]:
         raise HTTPException(403, "Not allowed to view onboarding")
 
     onboarding = db.query(Onboarding).filter(
@@ -56,27 +59,54 @@ def get_onboarding_by_id(db: Session, onboarding_id: int, current_user):
     return onboarding
 
 
-# GET ALL
-def get_all_onboarding(db: Session, current_user):
+# =====================================================
+# GET ALL (PAGINATION + SEARCH)
+# =====================================================
+def get_all_onboarding(
+    db: Session,
+    current_user,
+    page: int = 1,
+    per_page: int = 10,
+    search: str | None = None,
+    is_active: bool | None = True
+):
 
     employee = get_current_employee(db, current_user)
-    role = employee.role.title
 
-    if role not in ["SA", "HR"]:
+    if employee.role.title not in ["SA", "HR"]:
         raise HTTPException(403, "Not allowed to view onboarding")
 
-    return db.query(Onboarding).filter(
-        Onboarding.is_active == True
-    ).all()
+    query = db.query(Onboarding)
+
+    if is_active is not None:
+        query = query.filter(Onboarding.is_active == is_active)
+
+    if search:
+        query = query.filter(
+            Onboarding.stage.ilike(f"%{search}%")
+        )
+
+    total = query.count()
+
+    records = (
+        query
+        .order_by(Onboarding.id)
+        .offset((page - 1) * per_page)
+        .limit(per_page)
+        .all()
+    )
+
+    return records, total
 
 
+# =====================================================
 # UPDATE
+# =====================================================
 def update_onboarding(db: Session, onboarding_id: int, data, current_user):
 
     employee = get_current_employee(db, current_user)
-    role = employee.role.title
 
-    if role not in ["SA", "HR"]:
+    if employee.role.title not in ["SA", "HR"]:
         raise HTTPException(403, "Not allowed to update onboarding")
 
     onboarding = db.query(Onboarding).filter(
@@ -107,13 +137,14 @@ def update_onboarding(db: Session, onboarding_id: int, data, current_user):
     return onboarding
 
 
+# =====================================================
 # DELETE
+# =====================================================
 def soft_delete_onboarding(db: Session, onboarding_id: int, current_user):
 
     employee = get_current_employee(db, current_user)
-    role = employee.role.title
 
-    if role not in ["SA", "HR"]:
+    if employee.role.title not in ["SA", "HR"]:
         raise HTTPException(403, "Not allowed to delete onboarding")
 
     onboarding = db.query(Onboarding).filter(
@@ -122,6 +153,9 @@ def soft_delete_onboarding(db: Session, onboarding_id: int, current_user):
 
     if not onboarding:
         raise HTTPException(404, "Onboarding not found")
+
+    if not onboarding.is_active:
+        raise HTTPException(400, "Onboarding already inactive")
 
     onboarding.is_active = False
 

@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
+from math import ceil
 
 from app.core.database import get_db
 from app.common.schemas import APIResponse
 from app.auth.security import get_current_user
 
 from . import service, schemas
-
 
 router = APIRouter(tags=["Resignations"])
 
@@ -25,7 +25,7 @@ def create_resignation(
     resignation = service.create_resignation(db, data, current_user)
 
     return APIResponse(
-        code=status.HTTP_201_CREATED,
+        code=201,
         message="Resignation created successfully",
         data=schemas.ResignationResponse.model_validate(resignation)
     )
@@ -33,19 +33,32 @@ def create_resignation(
 
 @router.get("/", status_code=status.HTTP_200_OK)
 def list_resignations(
+    page: int = 1,
+    per_page: int = 10,
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
 
-    records = service.get_all_resignations(db, current_user)
+    page = max(page, 1)
+    per_page = min(max(per_page, 1), 100)
+
+    records, total = service.get_all_resignations(
+        db, current_user, page, per_page
+    )
 
     return APIResponse(
-        code=status.HTTP_200_OK,
+        code=200,
         message="Resignations retrieved successfully",
-        data=[
-            schemas.ResignationResponse.model_validate(r)
-            for r in records
-        ]
+        data={
+            "items": [
+                schemas.ResignationResponse.model_validate(r)
+                for r in records
+            ],
+            "total": total,
+            "page": page,
+            "per_page": per_page,
+            "pages": ceil(total / per_page)
+        }
     )
 
 
@@ -61,7 +74,7 @@ def get_resignation(
     )
 
     return APIResponse(
-        code=status.HTTP_200_OK,
+        code=200,
         message="Resignation retrieved successfully",
         data=schemas.ResignationResponse.model_validate(resignation)
     )
@@ -80,7 +93,7 @@ def update_resignation(
     )
 
     return APIResponse(
-        code=status.HTTP_200_OK,
+        code=200,
         message="Resignation updated successfully",
         data=schemas.ResignationResponse.model_validate(resignation)
     )
@@ -98,7 +111,7 @@ def delete_resignation(
     )
 
     return APIResponse(
-        code=status.HTTP_200_OK,
+        code=200,
         message="Resignation deactivated successfully"
     )
 
@@ -109,19 +122,32 @@ def delete_resignation(
 
 @router.get("/clearance", status_code=status.HTTP_200_OK)
 def list_clearance(
+    page: int = 1,
+    per_page: int = 10,
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
 
-    records = service.get_all_clearance(db, current_user)
+    page = max(page, 1)
+    per_page = min(max(per_page, 1), 100)
+
+    records, total = service.get_all_clearance(
+        db, current_user, page, per_page
+    )
 
     return APIResponse(
-        code=status.HTTP_200_OK,
+        code=200,
         message="Clearance records retrieved successfully",
-        data=[
-            schemas.ClearanceResponse.model_validate(c)
-            for c in records
-        ]
+        data={
+            "items": [
+                schemas.ClearanceResponse.model_validate(c)
+                for c in records
+            ],
+            "total": total,
+            "page": page,
+            "per_page": per_page,
+            "pages": ceil(total / per_page)
+        }
     )
 
 
@@ -137,7 +163,7 @@ def get_clearance(
     )
 
     return APIResponse(
-        code=status.HTTP_200_OK,
+        code=200,
         message="Clearance retrieved successfully",
         data=schemas.ClearanceResponse.model_validate(clearance)
     )
@@ -156,7 +182,7 @@ def update_clearance(
     )
 
     return APIResponse(
-        code=status.HTTP_200_OK,
+        code=200,
         message="Clearance updated successfully",
         data=schemas.ClearanceResponse.model_validate(clearance)
     )
@@ -174,6 +200,6 @@ def delete_clearance(
     )
 
     return APIResponse(
-        code=status.HTTP_200_OK,
+        code=200,
         message="Clearance deactivated successfully"
     )

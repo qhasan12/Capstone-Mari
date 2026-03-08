@@ -39,17 +39,37 @@ def create_job_posting(
 
 @router.get("/job-posting")
 def get_job_postings(
+    page: int = 1,
+    per_page: int = 10,
+    search: str | None = None,
+    is_active: bool | None = None,
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
-    postings = service.get_all_job_postings(db, current_user)
+
+    if page < 1:
+        page = 1
+
+    per_page = min(per_page, 100)
+
+    postings, total = service.get_all_job_postings(
+        db, current_user, page, per_page, search, is_active
+    )
 
     return APIResponse(
         code=200,
         message="Job postings fetched successfully",
-        data=[JobPostingResponse.model_validate(p) for p in postings]
+        data={
+            "items": [
+                JobPostingResponse.model_validate(p)
+                for p in postings
+            ],
+            "total": total,
+            "page": page,
+            "per_page": per_page,
+            "pages": ceil(total / per_page) if per_page else 1
+        }
     )
-
 
 @router.get("/job-posting/{posting_id}")
 def get_job_posting(
@@ -115,19 +135,41 @@ def create_hiring_request(
     )
 
 
+from math import ceil
+
 @router.get("/")
 def get_hiring_requests(
+    page: int = 1,
+    per_page: int = 10,
+    search: str | None = None,
+    is_active: bool | None = None,
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
-    hirings = service.get_all_hiring_requests(db, current_user)
+
+    if page < 1:
+        page = 1
+
+    per_page = min(per_page, 100)
+
+    hirings, total = service.get_all_hiring_requests(
+        db, current_user, page, per_page, search, is_active
+    )
 
     return APIResponse(
         code=200,
         message="Hiring requests fetched successfully",
-        data=[HiringRequestResponse.model_validate(h) for h in hirings]
+        data={
+            "items": [
+                HiringRequestResponse.model_validate(h)
+                for h in hirings
+            ],
+            "total": total,
+            "page": page,
+            "per_page": per_page,
+            "pages": ceil(total / per_page) if per_page else 1
+        }
     )
-
 
 @router.get("/{hiring_id}")
 def get_hiring_request(

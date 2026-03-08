@@ -10,27 +10,56 @@ from app.core.rbac import get_current_employee
 # =========================
 # READ ALL
 # =========================
-def get_employees(db: Session, current_user):
+from sqlalchemy import or_
+
+def get_employees(
+    db: Session,
+    current_user,
+    page: int = 1,
+    per_page: int = 10,
+    search: str | None = None,
+    is_active: bool | None = None
+):
 
     current_employee = get_current_employee(db, current_user)
     role = current_employee.role.title
 
-    # SA & HR -> see all
+    query = db.query(Employee)
+
+    # Active filter
+    if is_active is not None:
+        query = query.filter(Employee.is_active == is_active)
+
+    # Search
+    if search:
+        query = query.filter(
+            or_(
+                Employee.full_name.ilike(f"%{search}%"),
+                Employee.email.ilike(f"%{search}%")
+            )
+        )
+
+    # RBAC
     if role in ["SA", "HR"]:
-        return db.query(Employee).filter(
-            Employee.is_active == True
-        ).all()
+        pass
 
-    # Manager -> only team
-    if role == "MGR":
-        return db.query(Employee).filter(
-            Employee.manager_id == current_employee.id,
-            Employee.is_active == True
-        ).all()
+    elif role == "MGR":
+        query = query.filter(Employee.manager_id == current_employee.id)
 
-    raise HTTPException(403, "Not allowed to view employees")
+    else:
+        raise HTTPException(403, "Not allowed to view employees")
 
+    total = query.count()
 
+    employees = (
+        query
+        .order_by(Employee.id)
+        .offset((page - 1) * per_page)
+        .limit(per_page)
+        .all()
+    )
+
+    return employees, total
 # =========================
 # READ ONE
 # =========================
@@ -50,7 +79,7 @@ def get_employee_by_id(db: Session, employee_id: int, current_user):
     if role in ["SA", "HR"]:
         return employee
 
-    if role == "MGR" and employee.manager_id == current_employee.id or employee.id == current_employee.id:
+    if role == "MGR" or employee.manager_id == current_employee.id or employee.id == current_employee.id:
         return employee
 
     if role == "EMP" and employee.id == current_employee.id:

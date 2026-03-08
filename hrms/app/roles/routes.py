@@ -1,18 +1,19 @@
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
+from math import ceil
 
 from app.core.database import get_db
 from app.common.schemas import APIResponse
 from app.roles import service, schemas
 from app.auth.security import get_current_user
-from app.core.rbac import ensure_superadmin
 
 router = APIRouter(tags=["Roles"])
 
 
-# =========================
-# CREATE (SA only)
-# =========================
+# =====================================================
+# CREATE ROLE (SA ONLY)
+# =====================================================
+
 @router.post("/", status_code=status.HTTP_201_CREATED)
 def create_role(
     data: schemas.RoleCreate,
@@ -20,9 +21,7 @@ def create_role(
     current_user = Depends(get_current_user)
 ):
 
-    ensure_superadmin(current_user)
-
-    role = service.create_role(db, data)
+    role = service.create_role(db, data, current_user)
 
     return APIResponse(
         code=status.HTTP_201_CREATED,
@@ -31,27 +30,51 @@ def create_role(
     )
 
 
-# =========================
-# LIST (All authenticated users)
-# =========================
+# =====================================================
+# LIST ROLES
+# =====================================================
+
 @router.get("/", status_code=status.HTTP_200_OK)
 def list_roles(
+    page: int = 1,
+    per_page: int = 10,
+    search: str | None = None,
+    is_active: bool | None = True,
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
 
-    roles = service.get_all_roles(db)
+    page = max(page, 1)
+    per_page = min(max(per_page, 1), 100)
+
+    roles, total = service.get_all_roles(
+        db,
+        page,
+        per_page,
+        search,
+        is_active
+    )
 
     return APIResponse(
         code=status.HTTP_200_OK,
         message="Roles retrieved successfully",
-        data=[schemas.RoleResponse.model_validate(r) for r in roles]
+        data={
+            "items": [
+                schemas.RoleResponse.model_validate(role)
+                for role in roles
+            ],
+            "total": total,
+            "page": page,
+            "per_page": per_page,
+            "pages": ceil(total / per_page)
+        }
     )
 
 
-# =========================
-# GET ONE (All authenticated users)
-# =========================
+# =====================================================
+# GET ROLE
+# =====================================================
+
 @router.get("/{role_id}", status_code=status.HTTP_200_OK)
 def get_role(
     role_id: int,
@@ -68,9 +91,10 @@ def get_role(
     )
 
 
-# =========================
-# UPDATE (SA only)
-# =========================
+# =====================================================
+# UPDATE ROLE (SA ONLY)
+# =====================================================
+
 @router.patch("/{role_id}", status_code=status.HTTP_200_OK)
 def update_role(
     role_id: int,
@@ -79,9 +103,7 @@ def update_role(
     current_user = Depends(get_current_user)
 ):
 
-    ensure_superadmin(current_user)
-
-    role = service.update_role(db, role_id, data)
+    role = service.update_role(db, role_id, data, current_user)
 
     return APIResponse(
         code=status.HTTP_200_OK,
@@ -90,9 +112,10 @@ def update_role(
     )
 
 
-# =========================
-# DELETE (SA only)
-# =========================
+# =====================================================
+# DELETE ROLE (SA ONLY)
+# =====================================================
+
 @router.delete("/{role_id}", status_code=status.HTTP_200_OK)
 def delete_role(
     role_id: int,
@@ -100,9 +123,7 @@ def delete_role(
     current_user = Depends(get_current_user)
 ):
 
-    ensure_superadmin(current_user)
-
-    role = service.delete_role(db, role_id)
+    role = service.delete_role(db, role_id, current_user)
 
     return APIResponse(
         code=status.HTTP_200_OK,

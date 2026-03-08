@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.common.schemas import APIResponse
 from app.auth.security import get_current_user
-
+from math import ceil
 from . import service, schemas
 
 router = APIRouter()
@@ -33,19 +33,39 @@ def create_department(
 # =========================
 @router.get("/", status_code=status.HTTP_200_OK)
 def list_departments(
+    page: int = 1,
+    per_page: int = 10,
+    search: str | None = None,
+    is_active: bool | None = None,
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
-    departments = service.get_departments(db)
+
+    # Validate page
+    if page < 1:
+        page = 1
+
+    # Protect DB from huge requests
+    per_page = min(per_page, 100)
+
+    departments, total = service.get_departments(
+        db, page, per_page, search, is_active
+    )
 
     return APIResponse(
         code=status.HTTP_200_OK,
         message="Departments retrieved successfully",
-        data=[schemas.DepartmentResponse.model_validate(dep) for dep in departments]
+        data={
+            "items": [
+                schemas.DepartmentResponse.model_validate(dep)
+                for dep in departments
+            ],
+            "total": total,
+            "page": page,
+            "per_page": per_page,
+            "pages": ceil(total / per_page) if per_page else 1
+        }
     )
-
-
-# =========================
 # GET ONE
 # =========================
 @router.get("/{department_id}", status_code=status.HTTP_200_OK)

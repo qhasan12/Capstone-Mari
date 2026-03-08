@@ -31,20 +31,41 @@ def create_employee(
 # =========================
 # LIST
 # =========================
+from math import ceil
+
 @router.get("/", status_code=status.HTTP_200_OK)
 def list_employees(
+    page: int = 1,
+    per_page: int = 10,
+    search: str | None = None,
+    is_active: bool | None = None,
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
-    employees = service.get_employees(db, current_user)
+
+    if page < 1:
+        page = 1
+
+    per_page = min(per_page, 100)
+
+    employees, total = service.get_employees(
+        db, current_user, page, per_page, search, is_active
+    )
 
     return APIResponse(
         code=200,
         message="Employees retrieved successfully",
-        data=[schemas.EmployeeResponse.model_validate(emp) for emp in employees]
+        data={
+            "items": [
+                schemas.EmployeeResponse.model_validate(emp)
+                for emp in employees
+            ],
+            "total": total,
+            "page": page,
+            "per_page": per_page,
+            "pages": ceil(total / per_page) if per_page else 1
+        }
     )
-
-
 # =========================
 # GET ONE
 # =========================

@@ -11,20 +11,39 @@ from app.core.rbac import ensure_superadmin
 # =========================
 
 
+from sqlalchemy import or_
 
-# =========================
-# READ ALL (Active Only)
-# =========================
-def get_departments(db: Session):
+def get_departments(
+    db: Session,
+    page: int = 1,
+    per_page: int = 10,
+    search: str | None = None,
+    is_active: bool | None = True
+):
 
-    return (
-        db.query(Department)
-        .filter(Department.is_active == True)
+    query = db.query(Department)
+
+    # Active filter
+    if is_active is not None:
+        query = query.filter(Department.is_active == is_active)
+
+    # Search
+    if search:
+        query = query.filter(
+            Department.name.ilike(f"%{search}%")
+        )
+
+    total = query.count()
+
+    departments = (
+        query
         .order_by(Department.id)
+        .offset((page - 1) * per_page)
+        .limit(per_page)
         .all()
     )
 
-
+    return departments, total
 # =========================
 # READ ONE
 # =========================

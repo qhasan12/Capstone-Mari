@@ -1,14 +1,18 @@
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 from fastapi import HTTPException
+
 from app.roles.models import Role
 from app.employees.models import Employee
 from app.core.rbac import ensure_superadmin
 
-# CREATE
-#Qamar;s comment: Added duplicate title check and default is_active to True if not provided
-def test1():
-    return 1+2
+
+# =====================================================
+# CREATE ROLE
+# =====================================================
+
 def create_role(db: Session, role_data, current_user):
+
     ensure_superadmin(current_user)
 
     title = role_data.title.strip()
@@ -37,18 +41,47 @@ def create_role(db: Session, role_data, current_user):
     return role
 
 
-# READ ALL (only active)
-def get_all_roles(db: Session):
-    return (
-        db.query(Role)
-        .filter(Role.is_active == True)
+# =====================================================
+# GET ALL ROLES
+# =====================================================
+
+def get_all_roles(
+    db: Session,
+    page: int = 1,
+    per_page: int = 10,
+    search: str | None = None,
+    is_active: bool | None = True
+):
+
+    query = db.query(Role)
+
+    if is_active is not None:
+        query = query.filter(Role.is_active == is_active)
+
+    if search:
+        query = query.filter(
+            Role.title.ilike(f"%{search}%")
+        )
+
+    total = query.count()
+
+    roles = (
+        query
         .order_by(Role.id)
+        .offset((page - 1) * per_page)
+        .limit(per_page)
         .all()
     )
 
+    return roles, total
 
-# READ ONE
+
+# =====================================================
+# GET ROLE BY ID
+# =====================================================
+
 def get_role_by_id(db: Session, role_id: int):
+
     role = db.query(Role).filter(
         Role.id == role_id
     ).first()
@@ -62,16 +95,20 @@ def get_role_by_id(db: Session, role_id: int):
     return role
 
 
-# UPDATE (PATCH style)
+# =====================================================
+# UPDATE ROLE
+# =====================================================
+
 def update_role(db: Session, role_id: int, update_data, current_user):
+
     ensure_superadmin(current_user)
 
     role = get_role_by_id(db, role_id)
 
     data = update_data.model_dump(exclude_unset=True)
 
-    # Handle title separately for duplicate protection
     if "title" in data:
+
         data["title"] = data["title"].strip()
 
         existing = db.query(Role).filter(
@@ -94,9 +131,14 @@ def update_role(db: Session, role_id: int, update_data, current_user):
     return role
 
 
-# SOFT DELETE
+# =====================================================
+# DELETE ROLE (SOFT DELETE)
+# =====================================================
+
 def delete_role(db: Session, role_id: int, current_user):
+
     ensure_superadmin(current_user)
+
     role = get_role_by_id(db, role_id)
 
     if not role.is_active:
@@ -105,7 +147,6 @@ def delete_role(db: Session, role_id: int, current_user):
             detail="Role already inactive"
         )
 
-    # Business rule: prevent deactivation if active employees exist
     active_employee = db.query(Employee).filter(
         Employee.role_id == role_id,
         Employee.is_active == True

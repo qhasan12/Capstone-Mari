@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 from fastapi import HTTPException, status
 
 from .models import TrainingRecord
@@ -6,13 +7,15 @@ from app.employees.models import Employee
 from app.core.rbac import get_current_employee
 
 
+# =====================================================
 # CREATE
+# =====================================================
+
 def create_training(db: Session, data, current_user):
 
     employee = get_current_employee(db, current_user)
-    role = employee.role.title
 
-    if role not in ["SA", "HR"]:
+    if employee.role.title not in ["SA", "HR"]:
         raise HTTPException(403, "Not allowed to create training")
 
     emp = db.query(Employee).filter(
@@ -25,7 +28,10 @@ def create_training(db: Session, data, current_user):
             detail="Employee not found"
         )
 
-    training = TrainingRecord(**data.model_dump())
+    training = TrainingRecord(
+        **data.model_dump(),
+        is_active=True
+    )
 
     db.add(training)
     db.commit()
@@ -34,17 +40,51 @@ def create_training(db: Session, data, current_user):
     return training
 
 
-# READ ALL
-def get_trainings(db: Session, current_user):
+# =====================================================
+# LIST
+# =====================================================
 
-    # Everyone logged in can view
+def get_trainings(
+    db: Session,
+    current_user,
+    page: int = 1,
+    per_page: int = 10,
+    search: str | None = None,
+    is_active: bool | None = True
+):
+
     get_current_employee(db, current_user)
 
-    trainings = db.query(TrainingRecord).all()
-    return trainings
+    query = db.query(TrainingRecord)
+
+    if is_active is not None:
+        query = query.filter(TrainingRecord.is_active == is_active)
+
+    if search:
+        query = query.join(Employee).filter(
+            or_(
+                Employee.full_name.ilike(f"%{search}%"),
+                TrainingRecord.training_name.ilike(f"%{search}%")
+            )
+        )
+
+    total = query.count()
+
+    trainings = (
+        query
+        .order_by(TrainingRecord.id)
+        .offset((page - 1) * per_page)
+        .limit(per_page)
+        .all()
+    )
+
+    return trainings, total
 
 
-# READ ONE
+# =====================================================
+# GET ONE
+# =====================================================
+
 def get_training_by_id(db: Session, training_id: int, current_user):
 
     get_current_employee(db, current_user)
@@ -62,13 +102,15 @@ def get_training_by_id(db: Session, training_id: int, current_user):
     return training
 
 
+# =====================================================
 # UPDATE
+# =====================================================
+
 def update_training(db: Session, training_id: int, data, current_user):
 
     employee = get_current_employee(db, current_user)
-    role = employee.role.title
 
-    if role not in ["SA", "HR"]:
+    if employee.role.title not in ["SA", "HR"]:
         raise HTTPException(403, "Not allowed to update training")
 
     training = db.query(TrainingRecord).filter(
@@ -84,6 +126,7 @@ def update_training(db: Session, training_id: int, data, current_user):
     update_data = data.model_dump(exclude_unset=True)
 
     if "employee_id" in update_data:
+
         emp = db.query(Employee).filter(
             Employee.id == update_data["employee_id"]
         ).first()
@@ -103,13 +146,15 @@ def update_training(db: Session, training_id: int, data, current_user):
     return training
 
 
+# =====================================================
 # DELETE (SOFT DELETE)
+# =====================================================
+
 def delete_training(db: Session, training_id: int, current_user):
 
     employee = get_current_employee(db, current_user)
-    role = employee.role.title
 
-    if role not in ["SA", "HR"]:
+    if employee.role.title not in ["SA", "HR"]:
         raise HTTPException(403, "Not allowed to delete training")
 
     training = db.query(TrainingRecord).filter(

@@ -35,7 +35,16 @@ def create_hiring_request(db: Session, hiring_data: HiringRequestCreate, current
 
 
 # READ ALL
-def get_all_hiring_requests(db: Session, current_user):
+from sqlalchemy import or_
+
+def get_all_hiring_requests(
+    db: Session,
+    current_user,
+    page: int = 1,
+    per_page: int = 10,
+    search: str | None = None,
+    is_active: bool | None = None
+):
 
     employee = get_current_employee(db, current_user)
     role = employee.role.title
@@ -43,12 +52,29 @@ def get_all_hiring_requests(db: Session, current_user):
     if role not in ["SA", "HR"]:
         raise HTTPException(403, "Not allowed to view hiring requests")
 
-    return (
-        db.query(HiringRequest)
-        .filter(HiringRequest.is_active == True)
+    query = db.query(HiringRequest)
+
+    if is_active is not None:
+        query = query.filter(HiringRequest.is_active == is_active)
+
+    if search:
+        query = query.filter(
+            HiringRequest.title.ilike(f"%{search}%")
+        )
+
+    total = query.count()
+
+    hirings = (
+        query
         .order_by(HiringRequest.id)
+        .offset((page - 1) * per_page)
+        .limit(per_page)
         .all()
     )
+
+    return hirings, total
+
+
 
 
 # READ ONE
@@ -174,19 +200,39 @@ def create_job_posting(db: Session, job_data: JobPostingCreate, current_user):
 
 
 # READ ALL
-def get_all_job_postings(db: Session, current_user):
+def get_all_job_postings(
+    db: Session,
+    current_user,
+    page: int = 1,
+    per_page: int = 10,
+    search: str | None = None,
+    is_active: bool | None = None
+):
 
     # Everyone logged in can view
     get_current_employee(db, current_user)
 
-    return (
-        db.query(JobPosting)
-        .filter(JobPosting.is_active == True)
+    query = db.query(JobPosting)
+
+    if is_active is not None:
+        query = query.filter(JobPosting.is_active == is_active)
+
+    if search:
+        query = query.filter(
+            JobPosting.title.ilike(f"%{search}%")
+        )
+
+    total = query.count()
+
+    postings = (
+        query
         .order_by(JobPosting.id)
+        .offset((page - 1) * per_page)
+        .limit(per_page)
         .all()
     )
 
-
+    return postings, total
 # READ ONE
 def get_job_posting_by_id(db: Session, posting_id: int, current_user):
 
