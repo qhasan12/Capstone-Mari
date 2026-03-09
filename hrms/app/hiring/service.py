@@ -25,6 +25,20 @@ def create_hiring_request(db: Session, hiring_data: HiringRequestCreate, current
     if role not in ["SA", "HR"]:
         raise HTTPException(403, "Not allowed to create hiring requests")
 
+    # Prevent duplicate active hiring request
+    existing = db.query(HiringRequest).filter(
+        HiringRequest.department_id == hiring_data.department_id,
+        HiringRequest.role_title == hiring_data.role_title,
+        HiringRequest.is_active == True,
+        HiringRequest.status != "Closed"
+    ).first()
+
+    if existing:
+        raise HTTPException(
+            status_code=400,
+            detail="An active hiring request already exists for this role in this department"
+        )
+
     hiring_request = HiringRequest(**hiring_data.model_dump())
 
     db.add(hiring_request)
@@ -32,8 +46,6 @@ def create_hiring_request(db: Session, hiring_data: HiringRequestCreate, current
     db.refresh(hiring_request)
 
     return hiring_request
-
-
 # READ ALL
 from sqlalchemy import or_
 
@@ -59,7 +71,7 @@ def get_all_hiring_requests(
 
     if search:
         query = query.filter(
-            HiringRequest.title.ilike(f"%{search}%")
+            HiringRequest.role_title.ilike(f"%{search}%")
         )
 
     total = query.count()
@@ -183,11 +195,28 @@ def create_job_posting(db: Session, job_data: JobPostingCreate, current_user):
 
     if not hiring:
         raise HTTPException(404, "Hiring request not found")
+    if hiring.approval_status != "Approved":
+        raise HTTPException(
+       400,
+       "Cannot create job posting for unapproved hiring request"
+   )
 
     if job_data.closing_date < job_data.posted_date:
         raise HTTPException(
             400,
             "Closing date cannot be before posted date"
+        )
+
+    # Prevent duplicate job posting
+    existing = db.query(JobPosting).filter(
+        JobPosting.hiring_request_id == job_data.hiring_request_id,
+        JobPosting.is_active == True
+    ).first()
+
+    if existing:
+        raise HTTPException(
+            400,
+            "A job posting already exists for this hiring request"
         )
 
     job_posting = JobPosting(**job_data.model_dump())

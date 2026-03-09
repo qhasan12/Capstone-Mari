@@ -23,9 +23,20 @@ def create_training(db: Session, data, current_user):
     ).first()
 
     if not emp:
+        raise HTTPException(404, "Employee not found")
+
+    # Prevent duplicates
+    existing = db.query(TrainingRecord).filter(
+        TrainingRecord.employee_id == data.employee_id,
+        TrainingRecord.training_title == data.training_title,
+        TrainingRecord.training_date == data.training_date,
+        TrainingRecord.is_active == True
+    ).first()
+
+    if existing:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Employee not found"
+            status_code=400,
+            detail="Training record already exists for this employee"
         )
 
     training = TrainingRecord(
@@ -38,8 +49,6 @@ def create_training(db: Session, data, current_user):
     db.refresh(training)
 
     return training
-
-
 # =====================================================
 # LIST
 # =====================================================
@@ -64,7 +73,7 @@ def get_trainings(
         query = query.join(Employee).filter(
             or_(
                 Employee.full_name.ilike(f"%{search}%"),
-                TrainingRecord.training_name.ilike(f"%{search}%")
+                TrainingRecord.training_title.ilike(f"%{search}%")
             )
         )
 

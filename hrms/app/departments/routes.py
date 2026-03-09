@@ -71,8 +71,7 @@ def list_departments(
 @router.get("/{department_id}", status_code=status.HTTP_200_OK)
 def get_department(
     department_id: int,
-    db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
+    db: Session = Depends(get_db)
 ):
     department = service.get_department_by_id(db, department_id)
 

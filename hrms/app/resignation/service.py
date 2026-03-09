@@ -141,6 +141,10 @@ def update_resignation(db: Session, resignation_id: int, data, current_user):
         if resignation.employee_id != employee.id:
             raise HTTPException(403)
 
+        # Employees can ONLY withdraw
+        if resignation.status == "Withdrawn":
+            raise HTTPException(400, "Resignation already withdrawn")
+
         resignation.status = "Withdrawn"
         resignation.is_active = False
 
@@ -214,9 +218,6 @@ def get_clearance_by_resignation_id(db: Session, resignation_id: int, current_us
 
     employee = get_current_employee(db, current_user)
 
-    if employee.role.title not in ["SA", "HR"]:
-        raise HTTPException(403)
-
     clearance = db.query(ClearanceRecord).filter(
         ClearanceRecord.resignation_id == resignation_id,
         ClearanceRecord.is_active == True
@@ -224,6 +225,20 @@ def get_clearance_by_resignation_id(db: Session, resignation_id: int, current_us
 
     if not clearance:
         raise HTTPException(404, "Clearance not found")
+
+    resignation = clearance.resignation
+    role = employee.role.title
+
+    if role in ["SA", "HR"]:
+        return clearance
+
+    if role == "MGR":
+        if resignation.employee.manager_id != employee.id:
+            raise HTTPException(403)
+
+    if role == "EMP":
+        if resignation.employee_id != employee.id:
+            raise HTTPException(403)
 
     return clearance
 

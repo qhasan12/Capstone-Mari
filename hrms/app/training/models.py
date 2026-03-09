@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, Date, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 from app.core.database import Base
+from sqlalchemy import UniqueConstraint
 
 
 class TrainingRecord(Base):
@@ -16,3 +17,11 @@ class TrainingRecord(Base):
     is_active = Column(Boolean, default=True)
 
     employee = relationship("Employee", back_populates="training_records")
+    __table_args__ = (
+        UniqueConstraint(
+            "employee_id",
+            "training_title",
+            "training_date",
+            name="unique_employee_training"
+        ),
+    )

@@ -2,8 +2,8 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy.orm import Session
 from app.employees.models import Employee
+from app.permissions.models import RolePermission, Permission
 def ensure_superadmin(current_user):
-
     if (
         not current_user.employee
         or not current_user.employee.role
@@ -34,19 +34,61 @@ def ensure_manager(user):
 # =========================
 # HELPER: CURRENT EMPLOYEE
 # =========================
+from fastapi import HTTPException
+from sqlalchemy.orm import Session
+
+from app.employees.models import Employee
+from app.permissions.models import RolePermission, Permission
+
+
+# =========================
+# GET CURRENT EMPLOYEE
+# =========================
 def get_current_employee(db: Session, current_user):
 
-    if not current_user.employee_id:
-        raise HTTPException(403, "User is not linked to an employee")
+    # Ensure user has employee
+    if not getattr(current_user, "employee_id", None):
+        raise HTTPException(
+            status_code=403,
+            detail="User is not linked to an employee"
+        )
 
     employee = db.query(Employee).filter(
         Employee.id == current_user.employee_id
     ).first()
 
     if not employee:
-        raise HTTPException(404, "Employee record not found")
+        raise HTTPException(
+            status_code=404,
+            detail="Employee record not found"
+        )
 
     if not employee.is_active:
-        raise HTTPException(403, "Employee account is inactive")
+        raise HTTPException(
+            status_code=403,
+            detail="Employee account is inactive"
+        )
 
     return employee
+
+
+# =========================
+# PERMISSION CHECK
+# =========================
+def require_permission(db: Session, employee: Employee, permission_name: str):
+
+    permission_exists = (
+        db.query(Permission.id)
+        .join(RolePermission, Permission.id == RolePermission.permission_id)
+        .filter(
+            RolePermission.role_id == employee.role_id,
+            Permission.name == permission_name
+        )
+        .first()
+    )
+
+    if not permission_exists:
+        raise HTTPException(
+            status_code=403,
+            detail="Permission denied"
+        )
