@@ -6,7 +6,7 @@ from .models import Department
 from app.hiring.models import HiringRequest
 from app.employees.models import Employee
 from app.core.rbac import get_current_employee, require_permission
-
+from sqlalchemy import func
 
 # =========================
 # READ ALL
@@ -75,10 +75,10 @@ def create_department(db: Session, data, current_user):
     employee = get_current_employee(db, current_user)
     require_permission(db, employee, "department:create")
 
-    name = data.name.strip()
+    name = data.name
 
     existing = db.query(Department).filter(
-        Department.name == name
+        func.lower(Department.name) == name.lower()
     ).first()
 
     if existing:
@@ -89,7 +89,7 @@ def create_department(db: Session, data, current_user):
 
     department = Department(
         name=name,
-        is_active=data.is_active if data.is_active is not None else True
+        is_active=data.is_active
     )
 
     db.add(department)
@@ -98,10 +98,10 @@ def create_department(db: Session, data, current_user):
 
     return department
 
-
 # =========================
 # UPDATE
 # =========================
+
 def update_department(db: Session, department_id: int, data, current_user):
 
     employee = get_current_employee(db, current_user)
@@ -118,10 +118,8 @@ def update_department(db: Session, department_id: int, data, current_user):
 
     if "name" in update_data:
 
-        new_name = update_data["name"].strip()
-
         existing = db.query(Department).filter(
-            Department.name == new_name,
+            func.lower(Department.name) == update_data["name"].lower(),
             Department.id != department_id
         ).first()
 
@@ -130,8 +128,6 @@ def update_department(db: Session, department_id: int, data, current_user):
                 status_code=400,
                 detail="Department name already in use"
             )
-
-        update_data["name"] = new_name
 
     for key, value in update_data.items():
         setattr(department, key, value)
@@ -167,16 +163,15 @@ def delete_department(db: Session, department_id: int, current_user):
             status_code=400,
             detail="Cannot deactivate department with active employees"
         )
-
-    # Prevent deletion if hiring requests exist
     if db.query(HiringRequest).filter(
-        HiringRequest.department_id == department_id
-    ).first():
-
+        HiringRequest.department_id == department_id,
+        HiringRequest.is_active == True
+        ).first():
         raise HTTPException(
             status_code=400,
-            detail="Cannot deactivate department with hiring requests"
+            detail="Cannot deactivate department with active hiring requests"
         )
+
 
     if not department.is_active:
         raise HTTPException(
