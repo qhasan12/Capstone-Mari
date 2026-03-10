@@ -29,6 +29,7 @@ DEFAULT_PERMISSIONS = [
     "employee:delete",
     "employee:view_team",
     "employee:view_self",
+    "employee:update_self",
 
     # =========================
     # Hiring Requests
@@ -88,6 +89,8 @@ DEFAULT_PERMISSIONS = [
     "leave_request:update",
     "leave_request:delete",
     "leave_request:approve",
+    "leave_request:reject",
+    "leave_request:cancel",
     "leave_request:view_team",
     "leave_request:view_self",
 
@@ -99,6 +102,7 @@ DEFAULT_PERMISSIONS = [
     "resignation:update",
     "resignation:delete",
     "resignation:approve",
+    "resignation:withdraw",
     "resignation:view_team",
     "resignation:view_self",
 
@@ -113,17 +117,21 @@ DEFAULT_PERMISSIONS = [
 
 def seed_permissions(db: Session):
     """
-    Seed permissions safely (no duplicates).
+    Seed all default permissions safely (no duplicates).
     """
 
-    for perm_name in DEFAULT_PERMISSIONS:
+    existing_permissions = {
+        p.name for p in db.query(Permission.name).all()
+    }
 
-        existing = db.query(Permission).filter(
-            Permission.name == perm_name
-        ).first()
+    new_permissions = [
+        Permission(name=perm)
+        for perm in DEFAULT_PERMISSIONS
+        if perm not in existing_permissions
+    ]
 
-        if not existing:
-            permission = Permission(name=perm_name)
-            db.add(permission)
+    if new_permissions:
+        db.add_all(new_permissions)
+        db.commit()
 
-    db.commit()
+    print(f"{len(new_permissions)} permissions seeded.")

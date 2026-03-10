@@ -12,7 +12,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.core.database import Base
-
+from sqlalchemy import UniqueConstraint
 
 class HiringRequest(Base):
     __tablename__ = "hiring_requests"
@@ -51,6 +51,15 @@ class HiringRequest(Base):
         back_populates="hiring_request",
         cascade="all, delete-orphan"
     )
+    
+    __table_args__ = (
+        UniqueConstraint(
+            "department_id",
+            "role_title",
+            "is_active",
+            name="uq_active_hiring_request_per_role_department"
+        ),
+    )
 
 class JobPosting(Base):
     __tablename__ = "job_postings"
@@ -77,3 +86,10 @@ class JobPosting(Base):
         "HiringRequest",
         back_populates="job_postings"
     )
+    __table_args__ = (
+    UniqueConstraint(
+        "hiring_request_id",
+        "is_active",
+        name="uq_active_job_posting_per_hiring_request"
+    ),
+    )   

@@ -47,7 +47,7 @@ def get_all_leave_types(
     page: int = 1,
     per_page: int = 10,
     search: str | None = None,
-    is_active: bool | None = None
+    is_active: bool | None = True
 ):
 
     get_current_employee(db, current_user)
@@ -180,6 +180,8 @@ def get_all_balances(
             (Employee.manager_id == employee.id) |
             (Employee.id == employee.id)
         )
+    elif role == "EMP":
+        query = query.filter(Employee.id == employee.id)
 
     else:
         raise HTTPException(403, "Not allowed")
@@ -342,34 +344,48 @@ def update_leave_request(db: Session, leave_id: int, data, current_user):
         LeaveRequest.id == leave_id,
         LeaveRequest.is_active == True
     ).first()
-    
+
     if not leave:
         raise HTTPException(404, "Leave request not found")
-    if leave.status == "Approved" and employee.role.title == "EMP":
-        raise HTTPException(400, "Approved leave cannot be modified")
-
-
 
     role = employee.role.title
     update_data = data.model_dump(exclude_unset=True)
-    if role == "EMP" and leave.employee_id != employee.id:
-        raise HTTPException(403)
+
+    # =========================
+    # ROLE PERMISSIONS
+    # =========================
+
+    if role == "EMP":
+        if update_data.get("status") in ["Approved", "Rejected","Pending"]:
+            raise HTTPException(403, "Employees cannot approve leave")
 
     if role == "MGR":
         if leave.employee.manager_id != employee.id:
             raise HTTPException(403)
-
         allowed_fields = {"status"}
-
-        
+        if update_data.get("status") not in ["Approved", "Rejected"]:
+            raise HTTPException(403)
 
         if not set(update_data.keys()).issubset(allowed_fields):
             raise HTTPException(403, "Managers can only update status")
+
+    # =========================
+    # STATUS RULES
+    # =========================
+    if leave.status == "Rejected":
+        raise HTTPException(400, "Rejected leave cannot be modified")
+
+    if leave.status == "Approved" and update_data.get("status") == "Approved":
+        raise HTTPException(400, "Leave is already approved")
+
     old_status = leave.status
 
     for key, value in update_data.items():
         setattr(leave, key, value)
 
+    # =========================
+    # BALANCE CALCULATION
+    # =========================
     leave_days = (leave.end_date - leave.start_date).days + 1
 
     balance = db.query(LeaveBalance).filter(
@@ -377,9 +393,11 @@ def update_leave_request(db: Session, leave_id: int, data, current_user):
         LeaveBalance.leave_type_id == leave.leave_type_id,
         LeaveBalance.is_active == True
     ).first()
+
     if not balance:
         raise HTTPException(404, "Leave balance not found")
 
+    # Approve leave
     if old_status != "Approved" and leave.status == "Approved":
 
         if balance.remaining_leaves < leave_days:
@@ -388,6 +406,7 @@ def update_leave_request(db: Session, leave_id: int, data, current_user):
         balance.used_leaves += leave_days
         balance.remaining_leaves -= leave_days
 
+    # Cancel leave
     if old_status == "Approved" and leave.status == "Cancelled":
 
         balance.used_leaves -= leave_days
@@ -397,7 +416,6 @@ def update_leave_request(db: Session, leave_id: int, data, current_user):
     db.refresh(leave)
 
     return leave
-
 
 def soft_delete_leave_request(db: Session, leave_id: int, current_user):
 
@@ -412,6 +430,8 @@ def soft_delete_leave_request(db: Session, leave_id: int, current_user):
 
     if employee.role.title == "EMP" and leave.employee_id != employee.id:
         raise HTTPException(403)
+    if employee.role.title == "MGR":
+        raise HTTPException(403, "Managers cannot delete leave requests")
 
     leave.is_active = False
 

@@ -125,7 +125,8 @@ def create_hiring_request(
     hiring_data: HiringRequestCreate,
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user)
-):
+):  
+    
     hiring = service.create_hiring_request(db, hiring_data, current_user)
 
     return APIResponse(

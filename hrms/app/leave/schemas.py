@@ -17,6 +17,7 @@ class LeaveStatus(str, Enum):
 class LeaveTypeCreate(BaseModel):
     name: str
     default_allocation: int = Field(gt=0)
+    is_active: bool
 
 
 class LeaveTypeUpdate(BaseModel):
@@ -85,7 +86,7 @@ class LeaveRequestCreate(BaseModel):
 
 class LeaveRequestUpdate(BaseModel):
     status: Optional[LeaveStatus] = None
-    is_active: Optional[bool] = None
+    is_active: Optional[bool] = True
 
 
 class LeaveRequestResponse(BaseModel):
