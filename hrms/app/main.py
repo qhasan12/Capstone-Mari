@@ -34,10 +34,16 @@ from app.common.seed import seed_initial_data
 # ✅ CREATE APP HERE
 app = FastAPI(title="HRMS API", version="1.0")
 #adding seed data for roles
+
 @app.on_event("startup")
 def startup_event():
+
+    # ✅ CREATE TABLES FIRST
+    Base.metadata.create_all(bind=engine)
+
     db = SessionLocal()
 
+    # ✅ THEN RUN SEEDS
     seed_roles(db)
     seed_permissions(db)
     seed_role_permissions(db)

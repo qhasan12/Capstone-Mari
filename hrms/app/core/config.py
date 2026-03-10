@@ -8,6 +8,7 @@ class Settings:
 
     # Database
     DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./hrms.db")
+    print(os.getenv("DATABASE_URL"))
 
     # App
     APP_NAME: str = "HRMS API"
