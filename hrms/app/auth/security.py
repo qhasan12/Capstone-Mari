@@ -53,7 +53,6 @@ def get_current_user(
             settings.SECRET_KEY,
             algorithms=[settings.ALGORITHM]
         )
-
         user_id: int = payload.get("user_id")
 
         if user_id is None:
@@ -63,7 +62,7 @@ def get_current_user(
         raise credentials_exception
 
     user = db.query(AuthUser).filter(AuthUser.id == user_id).first()
-    print("TOKEN:", token)
+
     if user is None:
         raise credentials_exception
 

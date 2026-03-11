@@ -49,7 +49,7 @@ def list_departments(
     per_page = min(per_page, 100)
 
     departments, total = service.get_departments(
-        db, page, per_page, search, is_active
+        db,current_user, page, per_page, search, is_active
     )
 
     return APIResponse(

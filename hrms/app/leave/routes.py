@@ -215,7 +215,7 @@ def create_leave_request(
 def list_leave_requests(
     page: int = 1,
     per_page: int = 10,
-    is_active: bool | None = None,
+    is_active: bool | None = True,
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user)
 ):

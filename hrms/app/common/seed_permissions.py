@@ -102,6 +102,7 @@ DEFAULT_PERMISSIONS = [
     "resignation:update",
     "resignation:delete",
     "resignation:approve",
+    "resignation:reject",
     "resignation:withdraw",
     "resignation:view_team",
     "resignation:view_self",

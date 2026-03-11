@@ -53,25 +53,39 @@ ROLE_PERMISSION_MAP = {
         "leave_type:view",
         "leave_type:update",
         "leave_type:delete",
+        
 
         # Leave balances
         "leave_balance:create",
         "leave_balance:view",
         "leave_balance:update",
         "leave_balance:delete",
+        "leave_balance:view_team",
+        "leave_balance:view_self",
+      
 
         # Leave requests
+        "leave_request:update",
+        "leave_request:create",
         "leave_request:view",
         "leave_request:approve",
         "leave_request:reject",
+        "leave_request:delete",
+        "leave_request:cancel",
 
         # Resignations
         "resignation:view",
         "resignation:approve",
+        "resignation:reject",
+        "resignation:create",
+        "resignation:update",
+        "resignation:delete",
+        
 
         # Clearance
         "clearance:view",
         "clearance:update",
+        "clearance:delete",
     ],
 
     # =========================
@@ -80,15 +94,22 @@ ROLE_PERMISSION_MAP = {
     "MGR": [
 
         "employee:view_team",
-
+        "leave_request:create",
         "leave_request:view_team",
         "leave_request:approve",
+        "leave_request:reject",
+        "leave_request:cancel",
 
         "leave_balance:view_team",
+        "training:view_team",
+        
+        
 
         "resignation:view_team",
-
-        "training:view",
+        "resignation:create",
+        "resignation:approve",
+        "resignation:reject",
+        
         "job_posting:view",
         "department:view",
         "leave_type:view",
@@ -113,7 +134,7 @@ ROLE_PERMISSION_MAP = {
         "resignation:view_self",
         "resignation:withdraw",
 
-        "training:view",
+        "training:view_self",
         "job_posting:view",
         "leave_type:view",
         "department:view",

@@ -69,13 +69,17 @@ def get_current_employee(db: Session, current_user):
             detail="Employee account is inactive"
         )
 
+
     return employee
 
 
 # =========================
 # PERMISSION CHECK
 # =========================
+#stops execution if permission is not found, otherwise returns None
 def require_permission(db: Session, employee: Employee, permission_name: str):
+    print("REQUIRE PERMISSION:", permission_name)
+    print("EMPLOYEE ROLE ID:", employee.role_id)
 
     permission_exists = (
         db.query(Permission.id)
@@ -85,10 +89,23 @@ def require_permission(db: Session, employee: Employee, permission_name: str):
             Permission.name == permission_name
         )
         .first()
+        
     )
-
     if not permission_exists:
         raise HTTPException(
             status_code=403,
             detail="Permission denied"
         )
+#conditional check that returns True/False instead of raising exception
+def has_permission(db: Session, employee: Employee, permission_name: str) -> bool:
+    permission_exists = (
+        db.query(Permission.id)
+        .join(RolePermission, Permission.id == RolePermission.permission_id)
+        .filter(
+            RolePermission.role_id == employee.role_id,
+            Permission.name == permission_name
+        )
+        .first()
+        
+    )
+    return permission_exists is not None

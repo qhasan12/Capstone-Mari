@@ -14,19 +14,19 @@ router = APIRouter(tags=["Onboarding"])
 # =====================================================
 # CREATE
 # =====================================================
-@router.post("/", status_code=status.HTTP_201_CREATED)
-def create_onboarding(
-    data: schemas.OnboardingCreate,
-    db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
-):
-    onboarding = service.create_onboarding(db, data, current_user)
+# @router.post("/", status_code=status.HTTP_201_CREATED)
+# def create_onboarding(
+#     data: schemas.OnboardingCreate,
+#     db: Session = Depends(get_db),
+#     current_user = Depends(get_current_user)
+# ):
+#     onboarding = service.create_onboarding(db, data, current_user)
 
-    return APIResponse(
-        code=201,
-        message="Onboarding created successfully",
-        data=schemas.OnboardingResponse.model_validate(onboarding)
-    )
+#     return APIResponse(
+#         code=201,
+#         message="Onboarding created successfully",
+#         data=schemas.OnboardingResponse.model_validate(onboarding)
+#     )
 
 
 # =====================================================
