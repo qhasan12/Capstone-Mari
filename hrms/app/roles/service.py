@@ -4,7 +4,11 @@ from fastapi import HTTPException
 
 from app.roles.models import Role
 from app.employees.models import Employee
-from app.core.rbac import ensure_superadmin
+from app.core.rbac import (
+    ensure_superadmin,
+    get_current_employee,
+    require_permission
+)
 
 
 # =====================================================
@@ -47,11 +51,19 @@ def create_role(db: Session, role_data, current_user):
 
 def get_all_roles(
     db: Session,
+    current_user,
     page: int = 1,
     per_page: int = 10,
     search: str | None = None,
     is_active: bool | None = True
 ):
+
+    employee = get_current_employee(db, current_user)
+    require_permission(db, employee, "role:view")
+
+    # SAFETY FIX
+    page = page or 1
+    per_page = per_page or 10
 
     query = db.query(Role)
 
@@ -59,9 +71,7 @@ def get_all_roles(
         query = query.filter(Role.is_active == is_active)
 
     if search:
-        query = query.filter(
-            Role.title.ilike(f"%{search}%")
-        )
+        query = query.filter(Role.title.ilike(f"%{search}%"))
 
     total = query.count()
 
@@ -80,20 +90,17 @@ def get_all_roles(
 # GET ROLE BY ID
 # =====================================================
 
-def get_role_by_id(db: Session, role_id: int):
+def get_role_by_id(db: Session, role_id: int, current_user):
 
-    role = db.query(Role).filter(
-        Role.id == role_id
-    ).first()
+    employee = get_current_employee(db, current_user)
+    require_permission(db, employee, "role:view")
+
+    role = db.query(Role).filter(Role.id == role_id).first()
 
     if not role:
-        raise HTTPException(
-            status_code=404,
-            detail="Role not found"
-        )
+        raise HTTPException(404, "Role not found")
 
     return role
-
 
 # =====================================================
 # UPDATE ROLE
@@ -103,9 +110,9 @@ def update_role(db: Session, role_id: int, update_data, current_user):
 
     ensure_superadmin(current_user)
 
-    role = get_role_by_id(db, role_id)
+    role = get_role_by_id(db, role_id, current_user)
 
-    data = update_data.model_dump(exclude_unset=True)
+    data = update_data.model_dump(exclude_unset=True, exclude_none=True)
 
     if "title" in data:
 
@@ -139,7 +146,7 @@ def delete_role(db: Session, role_id: int, current_user):
 
     ensure_superadmin(current_user)
 
-    role = get_role_by_id(db, role_id)
+    role = get_role_by_id(db, role_id, current_user)
 
     if not role.is_active:
         raise HTTPException(

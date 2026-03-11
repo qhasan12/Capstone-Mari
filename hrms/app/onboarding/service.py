@@ -2,41 +2,40 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException
 from sqlalchemy import or_
 
-from app.core.rbac import get_current_employee
+from app.core.rbac import get_current_employee,has_permission,require_permission
 from .models import Onboarding
 
 
 # =====================================================
 # CREATE
 # =====================================================
-def create_onboarding(db: Session, data, current_user):
+# def create_onboarding(db: Session, data, current_user):
 
-    employee = get_current_employee(db, current_user)
+#     employee = get_current_employee(db, current_user)
 
-    if employee.role.title not in ["SA", "HR"]:
-        raise HTTPException(403, "Not allowed to create onboarding")
+#     require_permission(db, employee, "onboarding:create")
 
-    existing = db.query(Onboarding).filter(
-        Onboarding.employee_id == data.employee_id,
-        Onboarding.is_active == True
-    ).first()
+#     existing = db.query(Onboarding).filter(
+#         Onboarding.employee_id == data.employee_id,
+#         Onboarding.is_active == True
+#     ).first()
 
-    if existing:
-        raise HTTPException(
-            400,
-            "Onboarding already exists for this employee"
-        )
+#     if existing:
+#         raise HTTPException(
+#             400,
+#             "Onboarding already exists for this employee"
+#         )
 
-    onboarding = Onboarding(
-        employee_id=data.employee_id,
-        stage="Initiated"
-    )
+#     onboarding = Onboarding(
+#         employee_id=data.employee_id,
+#         stage="Initiated"
+#     )
 
-    db.add(onboarding)
-    db.commit()
-    db.refresh(onboarding)
+#     db.add(onboarding)
+#     db.commit()
+#     db.refresh(onboarding)
 
-    return onboarding
+#     return onboarding
 
 
 # =====================================================
@@ -46,9 +45,7 @@ def get_onboarding_by_id(db: Session, onboarding_id: int, current_user):
 
     employee = get_current_employee(db, current_user)
 
-    if employee.role.title not in ["SA", "HR"]:
-        raise HTTPException(403, "Not allowed to view onboarding")
-
+    require_permission(db, employee, "onboarding:view")
     onboarding = db.query(Onboarding).filter(
         Onboarding.id == onboarding_id
     ).first()
@@ -73,8 +70,8 @@ def get_all_onboarding(
 
     employee = get_current_employee(db, current_user)
 
-    if employee.role.title not in ["SA", "HR"]:
-        raise HTTPException(403, "Not allowed to view onboarding")
+    require_permission(db, employee, "onboarding:view")
+
 
     query = db.query(Onboarding)
 
@@ -105,9 +102,7 @@ def get_all_onboarding(
 def update_onboarding(db: Session, onboarding_id: int, data, current_user):
 
     employee = get_current_employee(db, current_user)
-
-    if employee.role.title not in ["SA", "HR"]:
-        raise HTTPException(403, "Not allowed to update onboarding")
+    require_permission(db, employee, "onboarding:update")
 
     onboarding = db.query(Onboarding).filter(
         Onboarding.id == onboarding_id
@@ -118,7 +113,14 @@ def update_onboarding(db: Session, onboarding_id: int, data, current_user):
 
     update_data = data.model_dump(exclude_unset=True)
 
+    if not update_data:
+        raise HTTPException(400, "No valid fields provided for update")
+
     for field, value in update_data.items():
+
+        if value is None:
+            raise HTTPException(400, f"{field} cannot be null")
+
         setattr(onboarding, field, value)
 
     # Smart stage logic
@@ -136,7 +138,6 @@ def update_onboarding(db: Session, onboarding_id: int, data, current_user):
 
     return onboarding
 
-
 # =====================================================
 # DELETE
 # =====================================================
@@ -144,8 +145,7 @@ def soft_delete_onboarding(db: Session, onboarding_id: int, current_user):
 
     employee = get_current_employee(db, current_user)
 
-    if employee.role.title not in ["SA", "HR"]:
-        raise HTTPException(403, "Not allowed to delete onboarding")
+    require_permission(db, employee, "onboarding:delete")
 
     onboarding = db.query(Onboarding).filter(
         Onboarding.id == onboarding_id

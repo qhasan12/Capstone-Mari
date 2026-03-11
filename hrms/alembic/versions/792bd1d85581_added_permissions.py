@@ -1,8 +1,8 @@
-"""create roles and permissions tables
+"""added permissions
 
-Revision ID: e066c6f98761
+Revision ID: 792bd1d85581
 Revises: 
-Create Date: 2026-03-09 06:46:57.627568
+Create Date: 2026-03-11 12:57:10.523914
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'e066c6f98761'
+revision: str = '792bd1d85581'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -100,7 +100,8 @@ def upgrade() -> None:
     sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
     sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
     sa.ForeignKeyConstraint(['department_id'], ['departments.id'], ondelete='RESTRICT'),
-    sa.PrimaryKeyConstraint('id')
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('department_id', 'role_title', 'is_active', name='uq_active_hiring_request_per_role_department')
     )
     op.create_index(op.f('ix_hiring_requests_department_id'), 'hiring_requests', ['department_id'], unique=False)
     op.create_index(op.f('ix_hiring_requests_id'), 'hiring_requests', ['id'], unique=False)
@@ -138,7 +139,8 @@ def upgrade() -> None:
     sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
     sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
     sa.ForeignKeyConstraint(['hiring_request_id'], ['hiring_requests.id'], ondelete='CASCADE'),
-    sa.PrimaryKeyConstraint('id')
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('hiring_request_id', 'is_active', name='uq_active_job_posting_per_hiring_request')
     )
     op.create_index(op.f('ix_job_postings_hiring_request_id'), 'job_postings', ['hiring_request_id'], unique=False)
     op.create_index(op.f('ix_job_postings_id'), 'job_postings', ['id'], unique=False)
@@ -199,7 +201,8 @@ def upgrade() -> None:
     sa.Column('status', sa.String(length=50), nullable=True),
     sa.Column('is_active', sa.Boolean(), nullable=True),
     sa.ForeignKeyConstraint(['employee_id'], ['employees.id'], ),
-    sa.PrimaryKeyConstraint('id')
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('employee_id', 'training_title', 'training_date', name='unique_employee_training')
     )
     op.create_table('clearance_records',
     sa.Column('id', sa.Integer(), nullable=False),

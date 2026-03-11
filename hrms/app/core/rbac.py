@@ -1,8 +1,13 @@
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy.orm import Session
+
 from app.employees.models import Employee
 from app.permissions.models import RolePermission, Permission
+
+
+# =========================
+# SUPERADMIN CHECK
+# =========================
 def ensure_superadmin(current_user):
     if (
         not current_user.employee
@@ -13,32 +18,6 @@ def ensure_superadmin(current_user):
             status_code=403,
             detail="Only SuperAdmin is allowed to perform this action"
         )
-        
-        
-def ensure_hr_or_sa(user):
-    if user.role.name not in ["SuperAdmin", "HR"]:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="HR or SuperAdmin access required"
-        )
-
-
-def ensure_manager(user):
-    if user.role.name != "Manager":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Manager access required"
-        )
-
-
-# =========================
-# HELPER: CURRENT EMPLOYEE
-# =========================
-from fastapi import HTTPException
-from sqlalchemy.orm import Session
-
-from app.employees.models import Employee
-from app.permissions.models import RolePermission, Permission
 
 
 # =========================
@@ -46,15 +25,8 @@ from app.permissions.models import RolePermission, Permission
 # =========================
 def get_current_employee(db: Session, current_user):
 
-    # Ensure user has employee
-    if not getattr(current_user, "employee_id", None):
-        raise HTTPException(
-            status_code=403,
-            detail="User is not linked to an employee"
-        )
-
     employee = db.query(Employee).filter(
-        Employee.id == current_user.employee_id
+        Employee.id == current_user.id
     ).first()
 
     if not employee:
@@ -71,15 +43,14 @@ def get_current_employee(db: Session, current_user):
 
     return employee
 
-
 # =========================
-# PERMISSION CHECK
+# REQUIRE PERMISSION
 # =========================
 def require_permission(db: Session, employee: Employee, permission_name: str):
 
     permission_exists = (
-        db.query(Permission.id)
-        .join(RolePermission, Permission.id == RolePermission.permission_id)
+        db.query(RolePermission)
+        .join(Permission)
         .filter(
             RolePermission.role_id == employee.role_id,
             Permission.name == permission_name
@@ -92,3 +63,21 @@ def require_permission(db: Session, employee: Employee, permission_name: str):
             status_code=403,
             detail="Permission denied"
         )
+
+
+# =========================
+# HAS PERMISSION
+# =========================
+def has_permission(db: Session, employee: Employee, permission_name: str) -> bool:
+
+    permission_exists = (
+        db.query(RolePermission)
+        .join(Permission)
+        .filter(
+            RolePermission.role_id == employee.role_id,
+            Permission.name == permission_name
+        )
+        .first()
+    )
+
+    return permission_exists is not None

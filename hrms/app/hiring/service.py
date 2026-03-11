@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
-
+from sqlalchemy import or_
 from app.hiring.models import HiringRequest, JobPosting
 from app.hiring.schemas import (
     HiringRequestCreate,
@@ -8,8 +8,8 @@ from app.hiring.schemas import (
     JobPostingCreate,
     JobPostingUpdate
 )
-
-from app.core.rbac import get_current_employee
+from app.core.rbac import get_current_employee,require_permission,has_permission
+from app.departments.models import Department
 
 
 # -----------------------
@@ -20,12 +20,25 @@ from app.core.rbac import get_current_employee
 def create_hiring_request(db: Session, hiring_data: HiringRequestCreate, current_user):
 
     employee = get_current_employee(db, current_user)
-    role = employee.role.title
+    require_permission(db, employee, "hiring_request:create")
 
-    if role not in ["SA", "HR"]:
-        raise HTTPException(403, "Not allowed to create hiring requests")
+    # =========================
+    # Check if department exists
+    # =========================
+    department = db.query(Department).filter(
+        Department.id == hiring_data.department_id,
+        Department.is_active == True
+    ).first()
 
-    # Prevent duplicate active hiring request
+    if not department:
+        raise HTTPException(
+            status_code=404,
+            detail="Department not found"
+        )
+
+    # =========================
+    # Prevent duplicate hiring request
+    # =========================
     existing = db.query(HiringRequest).filter(
         HiringRequest.department_id == hiring_data.department_id,
         HiringRequest.role_title == hiring_data.role_title,
@@ -47,7 +60,7 @@ def create_hiring_request(db: Session, hiring_data: HiringRequestCreate, current
 
     return hiring_request
 # READ ALL
-from sqlalchemy import or_
+
 
 def get_all_hiring_requests(
     db: Session,
@@ -59,15 +72,18 @@ def get_all_hiring_requests(
 ):
 
     employee = get_current_employee(db, current_user)
-    role = employee.role.title
+    require_permission(db, employee, "hiring_request:view")
 
-    if role not in ["SA", "HR"]:
-        raise HTTPException(403, "Not allowed to view hiring requests")
 
     query = db.query(HiringRequest)
 
+    # if is_active is None:
+    #     query = query.filter(HiringRequest.is_active == True)
+
     if is_active is not None:
         query = query.filter(HiringRequest.is_active == is_active)
+    else:
+        query = query.filter(HiringRequest.is_active == True)
 
     if search:
         query = query.filter(
@@ -93,10 +109,8 @@ def get_all_hiring_requests(
 def get_hiring_request_by_id(db: Session, hiring_id: int, current_user):
 
     employee = get_current_employee(db, current_user)
-    role = employee.role.title
+    require_permission(db, employee, "hiring_request:view")
 
-    if role not in ["SA", "HR"]:
-        raise HTTPException(403, "Not allowed to view hiring requests")
 
     hiring = (
         db.query(HiringRequest)
@@ -119,11 +133,7 @@ def update_hiring_request(
 ):
 
     employee = get_current_employee(db, current_user)
-    role = employee.role.title
-
-    if role not in ["SA", "HR"]:
-        raise HTTPException(403, "Not allowed to update hiring requests")
-
+    require_permission(db, employee, "hiring_request:update")
     hiring = (
         db.query(HiringRequest)
         .filter(HiringRequest.id == hiring_id)
@@ -136,7 +146,34 @@ def update_hiring_request(
     if hiring.status == "Closed":
         raise HTTPException(400, "Cannot modify a closed hiring request")
 
+    # update_fields = update_data.model_dump(exclude_unset=True)
+
+    # for field, value in update_fields.items():
+    #     setattr(hiring, field, value)
+
+    # db.commit()
+    # db.refresh(hiring)
+
     update_fields = update_data.model_dump(exclude_unset=True)
+
+    # Prevent duplicate after update
+    if "department_id" in update_fields or "role_title" in update_fields:
+
+        dept = update_fields.get("department_id", hiring.department_id)
+        role = update_fields.get("role_title", hiring.role_title)
+
+        existing = db.query(HiringRequest).filter(
+            HiringRequest.department_id == dept,
+            HiringRequest.role_title == role,
+            HiringRequest.is_active == True,
+            HiringRequest.id != hiring_id
+        ).first()
+
+        if existing:
+            raise HTTPException(
+                400,
+                "An active hiring request already exists for this role in this department"
+            )
 
     for field, value in update_fields.items():
         setattr(hiring, field, value)
@@ -151,10 +188,7 @@ def update_hiring_request(
 def delete_hiring_request(db: Session, hiring_id: int, current_user):
 
     employee = get_current_employee(db, current_user)
-    role = employee.role.title
-
-    if role not in ["SA", "HR"]:
-        raise HTTPException(403, "Not allowed to delete hiring requests")
+    require_permission(db, employee, "hiring_request:delete")
 
     hiring = (
         db.query(HiringRequest)
@@ -183,10 +217,7 @@ def delete_hiring_request(db: Session, hiring_id: int, current_user):
 def create_job_posting(db: Session, job_data: JobPostingCreate, current_user):
 
     employee = get_current_employee(db, current_user)
-    role = employee.role.title
-
-    if role not in ["SA", "HR"]:
-        raise HTTPException(403, "Not allowed to create job postings")
+    require_permission(db, employee, "job_posting:create")
 
     hiring = db.query(HiringRequest).filter(
         HiringRequest.id == job_data.hiring_request_id,
@@ -239,12 +270,13 @@ def get_all_job_postings(
 ):
 
     # Everyone logged in can view
-    get_current_employee(db, current_user)
+    employee = get_current_employee(db, current_user)
+    require_permission(db, employee, "job_posting:view")
 
     query = db.query(JobPosting)
 
-    if is_active is not None:
-        query = query.filter(JobPosting.is_active == is_active)
+    if is_active is None:
+        query = query.filter(JobPosting.is_active == True)
 
     if search:
         query = query.filter(
@@ -265,7 +297,8 @@ def get_all_job_postings(
 # READ ONE
 def get_job_posting_by_id(db: Session, posting_id: int, current_user):
 
-    get_current_employee(db, current_user)
+    employee = get_current_employee(db, current_user)
+    require_permission(db, employee, "job_posting:view")
 
     posting = (
         db.query(JobPosting)
@@ -288,10 +321,8 @@ def update_job_posting(
 ):
 
     employee = get_current_employee(db, current_user)
-    role = employee.role.title
-
-    if role not in ["SA", "HR"]:
-        raise HTTPException(403, "Not allowed to update job postings")
+    
+    require_permission(db, employee, "job_posting:update")
 
     posting = (
         db.query(JobPosting)
@@ -324,10 +355,7 @@ def update_job_posting(
 def delete_job_posting(db: Session, posting_id: int, current_user):
 
     employee = get_current_employee(db, current_user)
-    role = employee.role.title
-
-    if role not in ["SA", "HR"]:
-        raise HTTPException(403, "Not allowed to delete job postings")
+    require_permission(db, employee, "job_posting:delete")
 
     posting = (
         db.query(JobPosting)

@@ -43,14 +43,13 @@ class ClearanceUpdate(BaseModel):
     clearance_completed: Optional[bool] = None
     is_active: Optional[bool] = True
 
-
 class ClearanceResponse(BaseModel):
     id: int
     resignation_id: int
-    laptop_returned: bool
-    access_revoked: bool
-    email_deactivated: bool
-    clearance_completed: bool
+    laptop_returned: Optional[bool] = False
+    access_revoked: Optional[bool] = False
+    email_deactivated: Optional[bool] = False
+    clearance_completed: Optional[bool] = False
     is_active: Optional[bool] = True
 
     class Config:

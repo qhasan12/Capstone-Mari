@@ -8,6 +8,7 @@ class LeaveStatus(str, Enum):
     pending = "Pending"
     approved = "Approved"
     rejected = "Rejected"
+    cancelled = "Cancelled"
 
 
 # ==============================
@@ -71,7 +72,7 @@ class LeaveBalanceResponse(BaseModel):
 # ==============================
 
 class LeaveRequestCreate(BaseModel):
-    employee_id: int
+    # employee_id: int
     leave_type_id: int
     start_date: date
     end_date: date
@@ -85,7 +86,7 @@ class LeaveRequestCreate(BaseModel):
 
 
 class LeaveRequestUpdate(BaseModel):
-    status: Optional[LeaveStatus] = None
+    status: Optional[LeaveStatus] = "Pending"
     is_active: Optional[bool] = True
 
 
@@ -97,7 +98,7 @@ class LeaveRequestResponse(BaseModel):
     end_date: date
     reason: Optional[str]
     status: LeaveStatus
-    is_active: bool
+    is_active: bool 
 
     class Config:
         from_attributes = True

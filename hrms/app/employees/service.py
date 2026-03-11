@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from .models import Employee
 from app.departments.models import Department
 from app.roles.models import Role
-from app.core.rbac import get_current_employee
+from app.core.rbac import get_current_employee, require_permission,has_permission
 
 
 # =========================
@@ -21,16 +21,14 @@ def get_employees(
     is_active: bool | None = None
 ):
 
-    current_employee = get_current_employee(db, current_user)
-    role = current_employee.role.title
+    employee = get_current_employee(db, current_user)
 
     query = db.query(Employee)
 
-    # Active filter
-    if is_active is not None:
+    if is_active is None:
+        query = query.filter(Employee.is_active == True)
+    else:
         query = query.filter(Employee.is_active == is_active)
-
-    # Search
     if search:
         query = query.filter(
             or_(
@@ -39,12 +37,28 @@ def get_employees(
             )
         )
 
-    # RBAC
-    if role in ["SA", "HR"]:
+    # print(require_permission(db, employee, "employee:view"))
+    # Permission checks
+
+    if has_permission(db, employee, "employee:view"):
         pass
 
-    elif role == "MGR":
-        query = query.filter(Employee.manager_id == current_employee.id)
+    elif has_permission(db, employee, "employee:view_team"):
+        query = query.filter(
+            or_(
+                Employee.id == employee.id,
+                Employee.manager_id == employee.id
+            )
+        )
+        if has_permission(db, employee, "employee:view_self"):
+            query = query.filter(
+                or_(
+                    Employee.id == employee.id,
+                    # Employee.manager_id == employee.id
+                )
+            )
+    # elif has_permission(db, employee, "employee:view_self"):
+    #     query = query.filter(Employee.id == employee.id)
 
     else:
         raise HTTPException(403, "Not allowed to view employees")
@@ -66,8 +80,7 @@ def get_employees(
 def get_employee_by_id(db: Session, employee_id: int, current_user):
 
     current_employee = get_current_employee(db, current_user)
-    role = current_employee.role.title
-
+    
     employee = db.query(Employee).filter(
         Employee.id == employee_id,
         Employee.is_active == True
@@ -76,15 +89,17 @@ def get_employee_by_id(db: Session, employee_id: int, current_user):
     if not employee:
         raise HTTPException(404, "Employee not found")
 
-    if role in ["SA", "HR"]:
+    if has_permission(db, current_employee, "employee:view"):
         return employee
 
-    if role == "MGR" or employee.manager_id == current_employee.id or employee.id == current_employee.id:
-        return employee
+    if has_permission(db, current_employee, "employee:view_team"):
 
-    if role == "EMP" and employee.id == current_employee.id:
-        return employee
+        if employee.manager_id == current_employee.id or employee.id == current_employee.id:
+            return employee
 
+    if has_permission(db, current_employee, "employee:view_self"):
+        if employee.id == current_employee.id:
+            return employee
     raise HTTPException(403, "Access denied")
 
 
@@ -94,10 +109,8 @@ def get_employee_by_id(db: Session, employee_id: int, current_user):
 def create_employee(db: Session, data, current_user):
 
     current_employee = get_current_employee(db, current_user)
-    role = current_employee.role.title
 
-    if role not in ["SA", "HR"]:
-        raise HTTPException(403, "Not allowed to create employees")
+    require_permission(db, current_employee, "employee:create")
 
     full_name = data.full_name.strip()
 
@@ -143,7 +156,14 @@ def create_employee(db: Session, data, current_user):
     db.add(employee)
     db.commit()
     db.refresh(employee)
-
+    #auto onboarding creation for new employee
+    from app.onboarding.models import Onboarding
+    onboarding = Onboarding(
+        employee_id=employee.id,
+        stage="Initiated"
+    )
+    db.add(onboarding)
+    db.commit()
     return employee
 
 
@@ -157,9 +177,14 @@ def update_employee(db: Session, employee_id: int, data, current_user):
 
     employee = get_employee_by_id(db, employee_id, current_user)
 
-    if role not in ["SA", "HR"]:
-        if not (role == "EMP" and employee.id == current_employee.id):
-            raise HTTPException(403, "Not allowed to update this employee")
+    if has_permission(db, current_employee, "employee:update"):
+        pass
+
+    elif has_permission(db, current_employee, "employee:update_self") and employee.id == current_employee.id:
+        pass
+
+    else:
+        raise HTTPException(403, "Not allowed to update this employee")
 
     update_data = data.model_dump(exclude_unset=True)
 
@@ -232,10 +257,7 @@ def update_employee(db: Session, employee_id: int, data, current_user):
 def delete_employee(db: Session, employee_id: int, current_user):
 
     current_employee = get_current_employee(db, current_user)
-    role = current_employee.role.title
-
-    if role not in ["SA", "HR"]:
-        raise HTTPException(403, "Not allowed to delete employees")
+    require_permission(db, current_employee, "employee:delete")
 
     employee = db.query(Employee).filter(
         Employee.id == employee_id
