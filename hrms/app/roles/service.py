@@ -112,7 +112,7 @@ def update_role(db: Session, role_id: int, update_data, current_user):
 
     role = get_role_by_id(db, role_id, current_user)
 
-    data = update_data.model_dump(exclude_unset=True)
+    data = update_data.model_dump(exclude_unset=True, exclude_none=True)
 
     if "title" in data:
 
