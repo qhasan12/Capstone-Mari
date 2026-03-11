@@ -254,6 +254,49 @@ def get_employee_balances(
 from datetime import date
 
 # =====================================================
+# UPDATE LEAVE BALANCE (PATCH)
+# =====================================================
+
+def update_leave_balance(
+    db: Session,
+    balance_id: int,
+    data,
+    current_user
+):
+
+    employee = get_current_employee(db, current_user)
+
+    require_permission(db, employee, "leave_balance:update")
+
+    balance = db.query(LeaveBalance).filter(
+        LeaveBalance.id == balance_id
+    ).first()
+
+    if not balance:
+        raise HTTPException(404, "Leave balance not found")
+
+    # Update fields only if provided
+    if data.total_leaves is not None:
+        balance.total_leaves = data.total_leaves
+
+    if data.used_leaves is not None:
+        balance.used_leaves = data.used_leaves
+
+    if data.is_active is not None:
+        balance.is_active = data.is_active
+
+    # Maintain correct remaining leaves
+    balance.remaining_leaves = balance.total_leaves - balance.used_leaves
+
+    if balance.remaining_leaves < 0:
+        raise HTTPException(400, "Used leaves cannot exceed total leaves")
+
+    db.commit()
+    db.refresh(balance)
+
+    return balance
+
+# =====================================================
 # LEAVE REQUESTS
 # =====================================================
 def create_leave_request(db: Session, data, current_user):
@@ -410,64 +453,65 @@ def update_leave_request(db: Session, leave_id: int, data, current_user):
         raise HTTPException(404, "Leave request not found")
 
     old_status = leave.status
+    new_status = update_data.get("status")
+
+    # =====================
+    # CANCEL (SELF ONLY)
+    # =====================
+
+    if new_status == "Cancelled":
+
+        if not has_permission(db, employee, "leave_request:cancel"):
+            raise HTTPException(403)
+
+        if leave.employee_id != employee.id:
+            raise HTTPException(403, "Can only cancel your own leave")
 
     # =====================
     # HR / SA
     # =====================
 
-    if has_permission(db, employee, "leave_request:update"):
+    elif has_permission(db, employee, "leave_request:update"):
 
-        # Cannot approve/reject own leave
-        if leave.employee_id == employee.id and update_data.get("status") in ["Approved","Rejected"]:
+        if leave.employee_id == employee.id and new_status in ["Approved", "Rejected"]:
             raise HTTPException(403, "Cannot approve/reject your own leave")
+
     # =====================
     # MANAGER
     # =====================
 
-    elif (has_permission(db, employee, "leave_request:approve") or has_permission(db, employee, "leave_request:reject")) and employee.role.title == "MGR":
+    elif employee.role.title == "MGR":
 
-        # must be team member
-        if leave.employee_id == employee.id:
-            raise HTTPException(403, "Managers cannot approve their own leave")
-        
+        if not (has_permission(db, employee, "leave_request:approve") or has_permission(db, employee, "leave_request:reject")):
+            raise HTTPException(403)
+
         if leave.employee.manager_id != employee.id:
             raise HTTPException(403, "Managers can only approve/reject team leave")
 
-        if update_data.get("status") not in ["Approved", "Rejected"]:
+        if new_status not in ["Approved", "Rejected"]:
             raise HTTPException(403, "Managers can only approve or reject leave")
 
-
     # =====================
-    # EMPLOYEE OR SELF EDIT
+    # EMPLOYEE
     # =====================
 
     elif leave.employee_id == employee.id:
 
-        # employees cannot approve/reject
-        if update_data.get("status") in ["Approved", "Rejected"]:
+        if new_status in ["Approved", "Rejected"]:
             raise HTTPException(403, "Employees cannot approve/reject leave")
-
-        # approved leave cannot be edited except cancel
-        if old_status == "Approved" and update_data.get("status") != "Cancelled":
-            raise HTTPException(400, "Approved leave cannot be modified")
-        if old_status == "Rejected":
-            raise HTTPException(400, "Rejected leave cannot be modified")
 
     else:
         raise HTTPException(403, "Not allowed")
 
     # =====================
-    # CANCEL RULE
+    # APPROVED LEAVE RULES
     # =====================
 
-    if update_data.get("status") == "Cancelled":
+    if old_status == "Approved" and new_status != "Cancelled":
+        raise HTTPException(400, "Approved leave cannot be modified")
 
-        if not has_permission(db, employee, "leave_request:cancel"):
-            raise HTTPException(403)
-
-        # cancel only own leave
-        if leave.employee_id != employee.id:
-            raise HTTPException(403, "Can only cancel your own leave")
+    if old_status == "Rejected":
+        raise HTTPException(400, "Rejected leave cannot be modified")
 
     # =====================
     # APPLY UPDATE
@@ -505,13 +549,50 @@ def update_leave_request(db: Session, leave_id: int, data, current_user):
 
         balance.used_leaves -= leave_days
         balance.remaining_leaves += leave_days
-    # status validation
-    allowed_status = ["Approved", "Rejected", "Cancelled"]
-
-    if "status" in update_data and update_data["status"] not in allowed_status:
-        raise HTTPException(400, "Invalid status update")
 
     db.commit()
     db.refresh(leave)
+
+    return leave
+
+
+# =====================================================
+# GET LEAVE REQUEST BY ID
+# =====================================================
+
+def get_leave_request_by_id(
+    db: Session,
+    leave_id: int,
+    current_user
+):
+
+    employee = get_current_employee(db, current_user)
+
+    leave = db.query(LeaveRequest).join(Employee).filter(
+        LeaveRequest.id == leave_id,
+        LeaveRequest.is_active == True
+    ).first()
+
+    if not leave:
+        raise HTTPException(404, "Leave request not found")
+
+    # SA / HR → view all
+    if has_permission(db, employee, "leave_request:view"):
+        pass
+
+    # Manager → team + self
+    elif has_permission(db, employee, "leave_request:view_team"):
+
+        if leave.employee.manager_id != employee.id and leave.employee_id != employee.id:
+            raise HTTPException(403, "Not allowed")
+
+    # Employee → self
+    elif has_permission(db, employee, "leave_request:view_self"):
+
+        if leave.employee_id != employee.id:
+            raise HTTPException(403, "Not allowed")
+
+    else:
+        raise HTTPException(403, "Not allowed")
 
     return leave

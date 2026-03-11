@@ -11,17 +11,54 @@ from app.core.rbac import get_current_employee,require_permission,has_permission
 # RESIGNATION
 # =====================================================
 
+# Only resigning for one self but document says that HR and Manager can resign for others.
+
+# def create_resignation(db: Session, data, current_user):
+
+#     employee = get_current_employee(db, current_user)
+#     if has_permission(db, employee,"resignation:create"):
+#         if employee.id == data.employee_id:
+#             pass
+#     else:
+#         raise HTTPException(403,"You can only resign for yourself")
+    
+#     existing = db.query(Resignation).filter(
+#         Resignation.employee_id == employee.id,
+#         Resignation.is_active == True
+#     ).first()
+
+#     if existing:
+#         raise HTTPException(400, "Active resignation already exists")
+
+#     resignation = Resignation(
+#         employee_id=employee.id,
+#         resignation_date=data.resignation_date,
+#         notice_end_date=data.notice_end_date,
+#         manager_approved=False,
+#         status="Pending Approval",
+#         is_active=True
+#     )
+
+#     db.add(resignation)
+#     db.flush()
+
+#     clearance = ClearanceRecord(resignation_id=resignation.id)
+#     db.add(clearance)
+
+#     db.commit()
+#     db.refresh(resignation)
+
+#     return resignation
+
 def create_resignation(db: Session, data, current_user):
 
     employee = get_current_employee(db, current_user)
-    if has_permission(db, employee,"resignation:create"):
-        if employee.id == data.employee_id:
-            pass
-    else:
-        raise HTTPException(403,"You can only resign for yourself")
-    
+
+    if not has_permission(db, employee, "resignation:create"):
+        raise HTTPException(403, "Permission denied")
+
     existing = db.query(Resignation).filter(
-        Resignation.employee_id == employee.id,
+        Resignation.employee_id == data.employee_id,
         Resignation.is_active == True
     ).first()
 
@@ -29,7 +66,7 @@ def create_resignation(db: Session, data, current_user):
         raise HTTPException(400, "Active resignation already exists")
 
     resignation = Resignation(
-        employee_id=employee.id,
+        employee_id=data.employee_id,
         resignation_date=data.resignation_date,
         notice_end_date=data.notice_end_date,
         manager_approved=False,
@@ -171,6 +208,9 @@ def update_resignation(db: Session, resignation_id: int, data, current_user):
 
         if resignation.status == "Withdrawn":
             raise HTTPException(400, "Resignation already withdrawn")
+    
+        if resignation.status != "Pending Approval":
+            raise HTTPException(400, "You can only withdraw pending resignations")
 
         resignation.status = "Withdrawn"
         resignation.is_active = False
@@ -179,6 +219,9 @@ def update_resignation(db: Session, resignation_id: int, data, current_user):
     # MANAGER APPROVE / REJECT
     # =====================================================
     elif has_permission(db, employee, "resignation:approve") or has_permission(db, employee, "resignation:reject"):
+
+        if resignation.employee_id == employee.id:
+            raise HTTPException(403, "Managers cannot approve their own resignation")
 
         if resignation.employee.manager_id != employee.id:
             raise HTTPException(403, "You can only approve/reject resignations of your team")

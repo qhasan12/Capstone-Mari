@@ -102,7 +102,6 @@ def get_all_onboarding(
 def update_onboarding(db: Session, onboarding_id: int, data, current_user):
 
     employee = get_current_employee(db, current_user)
-
     require_permission(db, employee, "onboarding:update")
 
     onboarding = db.query(Onboarding).filter(
@@ -114,14 +113,19 @@ def update_onboarding(db: Session, onboarding_id: int, data, current_user):
 
     update_data = data.model_dump(exclude_unset=True)
 
+    if not update_data:
+        raise HTTPException(400, "No valid fields provided for update")
+
     for field, value in update_data.items():
+
+        if value is None:
+            raise HTTPException(400, f"{field} cannot be null")
+
         setattr(onboarding, field, value)
 
     # Smart stage logic
     if onboarding.orientation_sent:
         onboarding.stage = "Completed"
-    elif onboarding.appointment_letter_generated:
-        onboarding.stage = "Appointment Generated"
     elif onboarding.resources_allocated:
         onboarding.stage = "Resources Allocated"
     elif onboarding.email_created:
@@ -133,7 +137,6 @@ def update_onboarding(db: Session, onboarding_id: int, data, current_user):
     db.refresh(onboarding)
 
     return onboarding
-
 
 # =====================================================
 # DELETE

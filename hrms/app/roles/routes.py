@@ -34,7 +34,7 @@ def create_role(
 # LIST ROLES
 # =====================================================
 
-@router.get("/", status_code=status.HTTP_200_OK)
+@router.get("/")
 def list_roles(
     page: int = 1,
     per_page: int = 10,
@@ -48,11 +48,12 @@ def list_roles(
     per_page = min(max(per_page, 1), 100)
 
     roles, total = service.get_all_roles(
-        db,
-        page,
-        per_page,
-        search,
-        is_active
+    db,
+    current_user,
+    page,
+    per_page,
+    search,
+    is_active
     )
 
     return APIResponse(
@@ -82,7 +83,7 @@ def get_role(
     current_user = Depends(get_current_user)
 ):
 
-    role = service.get_role_by_id(db, role_id)
+    role = service.get_role_by_id(db, role_id, current_user)
 
     return APIResponse(
         code=status.HTTP_200_OK,

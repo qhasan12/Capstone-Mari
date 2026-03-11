@@ -9,6 +9,7 @@ from app.hiring.schemas import (
     JobPostingUpdate
 )
 from app.core.rbac import get_current_employee,require_permission,has_permission
+from app.departments.models import Department
 
 
 # -----------------------
@@ -21,7 +22,23 @@ def create_hiring_request(db: Session, hiring_data: HiringRequestCreate, current
     employee = get_current_employee(db, current_user)
     require_permission(db, employee, "hiring_request:create")
 
-    # Prevent duplicate active hiring request
+    # =========================
+    # Check if department exists
+    # =========================
+    department = db.query(Department).filter(
+        Department.id == hiring_data.department_id,
+        Department.is_active == True
+    ).first()
+
+    if not department:
+        raise HTTPException(
+            status_code=404,
+            detail="Department not found"
+        )
+
+    # =========================
+    # Prevent duplicate hiring request
+    # =========================
     existing = db.query(HiringRequest).filter(
         HiringRequest.department_id == hiring_data.department_id,
         HiringRequest.role_title == hiring_data.role_title,
@@ -60,7 +77,12 @@ def get_all_hiring_requests(
 
     query = db.query(HiringRequest)
 
-    if is_active is None:
+    # if is_active is None:
+    #     query = query.filter(HiringRequest.is_active == True)
+
+    if is_active is not None:
+        query = query.filter(HiringRequest.is_active == is_active)
+    else:
         query = query.filter(HiringRequest.is_active == True)
 
     if search:
@@ -124,7 +146,34 @@ def update_hiring_request(
     if hiring.status == "Closed":
         raise HTTPException(400, "Cannot modify a closed hiring request")
 
+    # update_fields = update_data.model_dump(exclude_unset=True)
+
+    # for field, value in update_fields.items():
+    #     setattr(hiring, field, value)
+
+    # db.commit()
+    # db.refresh(hiring)
+
     update_fields = update_data.model_dump(exclude_unset=True)
+
+    # Prevent duplicate after update
+    if "department_id" in update_fields or "role_title" in update_fields:
+
+        dept = update_fields.get("department_id", hiring.department_id)
+        role = update_fields.get("role_title", hiring.role_title)
+
+        existing = db.query(HiringRequest).filter(
+            HiringRequest.department_id == dept,
+            HiringRequest.role_title == role,
+            HiringRequest.is_active == True,
+            HiringRequest.id != hiring_id
+        ).first()
+
+        if existing:
+            raise HTTPException(
+                400,
+                "An active hiring request already exists for this role in this department"
+            )
 
     for field, value in update_fields.items():
         setattr(hiring, field, value)
@@ -221,8 +270,8 @@ def get_all_job_postings(
 ):
 
     # Everyone logged in can view
-    get_current_employee(db, current_user)
-    require_permission(db, get_current_employee(db, current_user), "job_posting:view")
+    employee = get_current_employee(db, current_user)
+    require_permission(db, employee, "job_posting:view")
 
     query = db.query(JobPosting)
 

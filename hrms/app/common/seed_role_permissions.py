@@ -86,6 +86,9 @@ ROLE_PERMISSION_MAP = {
         "clearance:view",
         "clearance:update",
         "clearance:delete",
+
+        # Role
+        "role:view"
     ],
 
     # =========================
@@ -113,6 +116,9 @@ ROLE_PERMISSION_MAP = {
         "job_posting:view",
         "department:view",
         "leave_type:view",
+
+        # Role
+        "role:view"
     ],
 
     # =========================
@@ -138,6 +144,9 @@ ROLE_PERMISSION_MAP = {
         "job_posting:view",
         "leave_type:view",
         "department:view",
+
+        # Role
+        "role:view"
     ]
 }
 

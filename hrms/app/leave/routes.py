@@ -187,6 +187,27 @@ def get_employee_balances(
         ]
     )
 
+# =====================================================
+# UPDATE LEAVE BALANCE
+# =====================================================
+
+@router.patch("/balances/{balance_id}", status_code=status.HTTP_200_OK)
+def update_leave_balance(
+    balance_id: int,
+    data: schemas.LeaveBalanceUpdate,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+
+    balance = service.update_leave_balance(
+        db, balance_id, data, current_user
+    )
+
+    return APIResponse(
+        code=200,
+        message="Leave balance updated successfully",
+        data=schemas.LeaveBalanceResponse.model_validate(balance)
+    )
 
 # =====================================================
 # LEAVE REQUESTS
@@ -242,6 +263,22 @@ def list_leave_requests(
         }
     )
 
+@router.get("/requests/{leave_id}", status_code=status.HTTP_200_OK)
+def get_leave_request(
+    leave_id: int,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+
+    leave = service.get_leave_request_by_id(
+        db, leave_id, current_user
+    )
+
+    return APIResponse(
+        code=200,
+        message="Leave request retrieved successfully",
+        data=schemas.LeaveRequestResponse.model_validate(leave)
+    )
 
 @router.patch("/requests/{leave_id}", status_code=status.HTTP_200_OK)
 def update_leave_request(
