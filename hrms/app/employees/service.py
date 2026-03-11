@@ -54,11 +54,11 @@ def get_employees(
             query = query.filter(
                 or_(
                     Employee.id == employee.id,
-                    Employee.manager_id == employee.id
+                    # Employee.manager_id == employee.id
                 )
             )
-    elif has_permission(db, employee, "employee:view_self"):
-        query = query.filter(Employee.id == employee.id)
+    # elif has_permission(db, employee, "employee:view_self"):
+    #     query = query.filter(Employee.id == employee.id)
 
     else:
         raise HTTPException(403, "Not allowed to view employees")
