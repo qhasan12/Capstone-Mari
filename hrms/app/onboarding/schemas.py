@@ -20,7 +20,7 @@ class OnboardingUpdate(BaseModel):
     email_created: Optional[bool] = None
     resources_allocated: Optional[bool] = None
     orientation_sent: Optional[bool] = None
-    stage: Optional[str] = None
+    # stage: Optional[str] = None
     is_active: Optional[bool] = True
 
 

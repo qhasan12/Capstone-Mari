@@ -5,7 +5,7 @@ from fastapi import HTTPException
 from app.roles.models import Role
 from app.employees.models import Employee
 from app.core.rbac import (
-    ensure_superadmin,
+
     get_current_employee,
     require_permission
 )
@@ -16,10 +16,14 @@ from app.core.rbac import (
 # =====================================================
 
 def create_role(db: Session, role_data, current_user):
+    employee=get_current_employee(db,current_user)
 
-    ensure_superadmin(current_user)
+    require_permission(db, employee,"role:create")
 
     title = role_data.title.strip()
+    level=role_data.level
+  
+    
 
     existing = db.query(Role).filter(
         Role.title == title
@@ -108,8 +112,7 @@ def get_role_by_id(db: Session, role_id: int, current_user):
 
 def update_role(db: Session, role_id: int, update_data, current_user):
 
-    ensure_superadmin(current_user)
-
+    require_permission(db, get_current_employee(db, current_user), "role:update")
     role = get_role_by_id(db, role_id, current_user)
 
     data = update_data.model_dump(exclude_unset=True, exclude_none=True)
@@ -143,8 +146,8 @@ def update_role(db: Session, role_id: int, update_data, current_user):
 # =====================================================
 
 def delete_role(db: Session, role_id: int, current_user):
-
-    ensure_superadmin(current_user)
+    employee=get_current_employee(db, current_user)
+    require_permission(db,employee,"role:delete")
 
     role = get_role_by_id(db, role_id, current_user)
 

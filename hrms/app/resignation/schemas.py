@@ -8,15 +8,16 @@ from typing import Optional
 # ==============================
 
 class ResignationCreate(BaseModel):
-    employee_id: int
+    # employee_id: int
+    
     resignation_date: date
     notice_end_date: date
     is_active: Optional[bool] = True
 
 
 class ResignationUpdate(BaseModel):
-    manager_approved: Optional[bool] = None
-    status: Optional[str] = None
+    manager_approved: Optional[bool]
+    status: Optional[str]
     is_active: Optional[bool] = True
 
 class ResignationResponse(BaseModel):
@@ -40,7 +41,7 @@ class ClearanceUpdate(BaseModel):
     laptop_returned: Optional[bool] = None
     access_revoked: Optional[bool] = None
     email_deactivated: Optional[bool] = None
-    clearance_completed: Optional[bool] = None
+    # clearance_completed: Optional[bool] = None
     is_active: Optional[bool] = True
 
 class ClearanceResponse(BaseModel):

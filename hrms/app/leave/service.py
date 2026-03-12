@@ -14,16 +14,36 @@ from app.core.rbac import get_current_employee,require_permission,has_permission
 def create_leave_type(db: Session, data, current_user):
 
     employee = get_current_employee(db, current_user)
-
     require_permission(db, employee, "leave_type:create")
+
     leave_type = LeaveType(**data.model_dump())
 
     db.add(leave_type)
+    db.flush()  # get leave_type.id before commit
+
+    # Get all active employees
+    employees = db.query(Employee).filter(Employee.is_active == True).all()
+
+    balances = []
+
+    for emp in employees:
+        balances.append(
+            LeaveBalance(
+                employee_id=emp.id,
+                leave_type_id=leave_type.id,
+                total_leaves=leave_type.default_allocation,
+                used_leaves=0,
+                remaining_leaves=leave_type.default_allocation,
+                is_active=True
+            )
+        )
+
+    db.bulk_save_objects(balances)
+
     db.commit()
     db.refresh(leave_type)
 
     return leave_type
-
 
 def get_leave_type_by_id(db: Session, leave_type_id: int, current_user):
 
@@ -110,43 +130,43 @@ def soft_delete_leave_type(db: Session, leave_type_id: int, current_user):
 # LEAVE BALANCES
 # =====================================================
 
-def create_leave_balance(db: Session, data, current_user):
+# def create_leave_balance(db: Session, data, current_user):
 
-    employee = get_current_employee(db, current_user)
+#     employee = get_current_employee(db, current_user)
 
-    require_permission(db, employee, "leave_balance:create")
+#     require_permission(db, employee, "leave_balance:create")
 
-    leave_type = db.query(LeaveType).filter(
-        LeaveType.id == data.leave_type_id,
-        LeaveType.is_active == True
-    ).first()
+#     leave_type = db.query(LeaveType).filter(
+#         LeaveType.id == data.leave_type_id,
+#         LeaveType.is_active == True
+#     ).first()
 
-    if not leave_type:
-        raise HTTPException(404, "Leave type not found")
+#     if not leave_type:
+#         raise HTTPException(404, "Leave type not found")
 
-    existing = db.query(LeaveBalance).filter(
-        LeaveBalance.employee_id == data.employee_id,
-        LeaveBalance.leave_type_id == data.leave_type_id,
-        LeaveBalance.is_active == True
-    ).first()
+#     existing = db.query(LeaveBalance).filter(
+#         LeaveBalance.employee_id == data.employee_id,
+#         LeaveBalance.leave_type_id == data.leave_type_id,
+#         LeaveBalance.is_active == True
+#     ).first()
 
-    if existing:
-        raise HTTPException(400, "Leave balance already exists")
+#     if existing:
+#         raise HTTPException(400, "Leave balance already exists")
 
-    balance = LeaveBalance(
-        employee_id=data.employee_id,
-        leave_type_id=data.leave_type_id,
-        total_leaves=data.total_leaves,
-        used_leaves=0,
-        remaining_leaves=data.total_leaves,
-        is_active=True
-    )
+#     balance = LeaveBalance(
+#         employee_id=data.employee_id,
+#         leave_type_id=data.leave_type_id,
+#         total_leaves=data.total_leaves,
+#         used_leaves=0,
+#         remaining_leaves=data.total_leaves,
+#         is_active=True
+#     )
 
-    db.add(balance)
-    db.commit()
-    db.refresh(balance)
+#     db.add(balance)
+#     db.commit()
+#     db.refresh(balance)
 
-    return balance
+#     return balance
 
 
 # =====================================================
@@ -274,6 +294,9 @@ def update_leave_balance(
 
     if not balance:
         raise HTTPException(404, "Leave balance not found")
+    if data.used_leaves is not None:
+        if data.used_leaves > balance.total_leaves:
+            raise HTTPException(400, "Used leaves cannot exceed total leaves")
 
     # Update fields only if provided
     if data.total_leaves is not None:
@@ -393,8 +416,10 @@ def get_leave_requests(
     # Manager → team + self
     elif has_permission(db, employee, "leave_request:view_team"):
         query = query.filter(
-            (Employee.manager_id == employee.id) |
-            (LeaveRequest.employee_id == employee.id)
+            or_(
+                Employee.manager_id == employee.id,
+                LeaveRequest.employee_id == employee.id
+            )
         )
 
     # Employee → self
@@ -465,7 +490,7 @@ def update_leave_request(db: Session, leave_id: int, data, current_user):
             raise HTTPException(403)
 
         if leave.employee_id != employee.id:
-            raise HTTPException(403, "Can only cancel your own leave")
+            raise HTTPException(403, "You can only cancel your own leave")
 
     # =====================
     # HR / SA
@@ -475,8 +500,13 @@ def update_leave_request(db: Session, leave_id: int, data, current_user):
 
         if leave.employee_id == employee.id and new_status in ["Approved", "Rejected"]:
             raise HTTPException(403, "Cannot approve/reject your own leave")
+        if leave.employee_id != employee.id and new_status in ["Approved", "Rejected"]:
+            raise HTTPException(403, "Only managers can approve/reject leave")
+        if leave.employee_id != employee.id and new_status == "Cancelled":
+            raise HTTPException(403, "You can only cancel your own leave")
+    
 
-    # =====================
+    # ==================
     # MANAGER
     # =====================
 

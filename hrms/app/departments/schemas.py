@@ -24,7 +24,7 @@ class DepartmentCreate(BaseModel):
 
 class DepartmentUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=2, max_length=100)
-    is_active: Optional[bool] = None
+    # is_active: Optional[bool] = None
 
     model_config = ConfigDict(str_strip_whitespace=True)
 

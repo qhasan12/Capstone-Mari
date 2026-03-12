@@ -33,6 +33,7 @@ class VerifyOTPRequest(BaseModel):
 class ResetPasswordRequest(BaseModel):
     email: EmailStr
     new_password: str
+    # old_password: str
     
 
 class AuthUserResponse(BaseModel):

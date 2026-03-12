@@ -10,7 +10,126 @@ from . import service, schemas
 
 router = APIRouter(tags=["Resignations"])
 
+# =====================================================
+# CLEARANCE
+# =====================================================
+@router.get("/clearance/", status_code=status.HTTP_200_OK)
+def list_clearance(
+    page: int = 1,
+    per_page: int = 10,
+    is_active: bool | None = True,
+    search: str | None = None,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
 
+    page = max(page, 1)
+    per_page = min(max(per_page, 1), 100)
+
+    records, total = service.get_all_clearance(
+    db, current_user, page, per_page, search, is_active
+    )
+
+    return APIResponse(
+        code=200,
+        message="Clearance records retrieved successfully",
+        data={
+            "items": [
+                schemas.ClearanceResponse.model_validate(c)
+                for c in records
+            ],
+            "total": total,
+            "page": page,
+            "per_page": per_page,
+            "pages": ceil(total / per_page)
+        }
+    )
+
+
+@router.get("/clearance/{resignation_id}", status_code=status.HTTP_200_OK)
+def get_clearance(
+    resignation_id: int,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+
+    clearance = service.get_clearance_by_resignation_id(
+        db, resignation_id, current_user
+    )
+
+    return APIResponse(
+        code=200,
+        message="Clearance retrieved successfully",
+        data=schemas.ClearanceResponse.model_validate(clearance)
+    )
+
+
+# @router.get("/clearance", status_code=status.HTTP_200_OK)
+# def list_clearance(
+#     page: int = 1,
+#     per_page: int = 10,
+#     db: Session = Depends(get_db),
+#     current_user = Depends(get_current_user)
+# ):
+
+#     page = max(page, 1)
+#     per_page = min(max(per_page, 1), 100)
+
+#     records, total = service.get_all_clearance(
+#         db, current_user, page, per_page
+#     )
+
+#     return APIResponse(
+#         code=200,
+#         message="Clearance records retrieved successfully",
+#         data={
+#             "items": [
+#                 schemas.ClearanceResponse.model_validate(c)
+#                 for c in records
+#             ],
+#             "total": total,
+#             "page": page,
+#             "per_page": per_page,
+#             "pages": ceil(total / per_page)
+#         }
+#     )
+
+
+
+@router.patch("/clearance/{resignation_id}", status_code=status.HTTP_200_OK)
+def update_clearance(
+    resignation_id: int,
+    data: schemas.ClearanceUpdate, 
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+
+    clearance = service.update_clearance(
+        db, resignation_id,data, current_user
+    )
+
+    return APIResponse(
+        code=200,
+        message="Clearance updated successfully",
+        data=schemas.ClearanceResponse.model_validate(clearance)
+    )
+
+
+@router.delete("/clearance/{resignation_id}", status_code=status.HTTP_200_OK)
+def delete_clearance(
+    resignation_id: int,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+
+    service.deactivate_clearance(
+        db, resignation_id, current_user
+    )
+
+    return APIResponse(
+        code=200,
+        message="Clearance deactivated successfully"
+    )
 # =====================================================
 # RESIGNATION
 # =====================================================
@@ -35,6 +154,8 @@ def create_resignation(
 def list_resignations(
     page: int = 1,
     per_page: int = 10,
+    search: str | None = None,
+    is_active: bool | None = True,
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
@@ -116,90 +237,3 @@ def delete_resignation(
     )
 
 
-# =====================================================
-# CLEARANCE
-# =====================================================
-
-@router.get("/clearance", status_code=status.HTTP_200_OK)
-def list_clearance(
-    page: int = 1,
-    per_page: int = 10,
-    db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
-):
-
-    page = max(page, 1)
-    per_page = min(max(per_page, 1), 100)
-
-    records, total = service.get_all_clearance(
-        db, current_user, page, per_page
-    )
-
-    return APIResponse(
-        code=200,
-        message="Clearance records retrieved successfully",
-        data={
-            "items": [
-                schemas.ClearanceResponse.model_validate(c)
-                for c in records
-            ],
-            "total": total,
-            "page": page,
-            "per_page": per_page,
-            "pages": ceil(total / per_page)
-        }
-    )
-
-
-@router.get("/clearance/{resignation_id}", status_code=status.HTTP_200_OK)
-def get_clearance(
-    resignation_id: int,
-    db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
-):
-
-    clearance = service.get_clearance_by_resignation_id(
-        db, resignation_id, current_user
-    )
-
-    return APIResponse(
-        code=200,
-        message="Clearance retrieved successfully",
-        data=schemas.ClearanceResponse.model_validate(clearance)
-    )
-
-
-@router.patch("/clearance/{resignation_id}", status_code=status.HTTP_200_OK)
-def update_clearance(
-    resignation_id: int,
-    data: schemas.ClearanceUpdate,
-    db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
-):
-
-    clearance = service.update_clearance(
-        db, resignation_id, data, current_user
-    )
-
-    return APIResponse(
-        code=200,
-        message="Clearance updated successfully",
-        data=schemas.ClearanceResponse.model_validate(clearance)
-    )
-
-
-@router.delete("/clearance/{resignation_id}", status_code=status.HTTP_200_OK)
-def delete_clearance(
-    resignation_id: int,
-    db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
-):
-
-    service.deactivate_clearance(
-        db, resignation_id, current_user
-    )
-
-    return APIResponse(
-        code=200,
-        message="Clearance deactivated successfully"
-    )

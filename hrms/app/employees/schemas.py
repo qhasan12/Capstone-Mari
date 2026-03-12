@@ -6,6 +6,7 @@ from typing import Optional
 class EmployeeCreate(BaseModel):
     full_name: str
     email: EmailStr
+    personal_email: EmailStr
     department_id: int
     role_id: int
     manager_id: Optional[int] = None
@@ -16,6 +17,7 @@ class EmployeeCreate(BaseModel):
 class EmployeeUpdate(BaseModel):
     full_name: Optional[str] = None
     email: Optional[EmailStr] = None
+    personal_email: Optional[EmailStr] = None
     department_id: Optional[int] = None
     role_id: Optional[int] = None
     manager_id: Optional[int] = None
@@ -28,6 +30,7 @@ class EmployeeResponse(BaseModel):
     id: int
     full_name: str
     email: EmailStr
+    personal_email: EmailStr
     department_id: int
     role_id: int
     manager_id: Optional[int]

@@ -23,6 +23,9 @@ ROLE_PERMISSION_MAP = {
 
         # Departments
         "department:view",
+        "department:create",
+        "department:update",
+        "department:delete",
 
         # Hiring
         "hiring_request:create",
@@ -88,7 +91,10 @@ ROLE_PERMISSION_MAP = {
         "clearance:delete",
 
         # Role
-        "role:view"
+        "role:view",
+        "role:create",
+        "role:update",
+        "role:delete"
     ],
 
     # =========================
@@ -105,6 +111,9 @@ ROLE_PERMISSION_MAP = {
 
         "leave_balance:view_team",
         "training:view_team",
+        "hiring_request:create",
+        "hiring_request:update",
+        
         
         
 
@@ -127,7 +136,7 @@ ROLE_PERMISSION_MAP = {
     "EMP": [
 
         "employee:view_self",
-        "employee:update_self",
+        # "employee:update_self",
 
         "leave_request:create",
         "leave_request:view_self",

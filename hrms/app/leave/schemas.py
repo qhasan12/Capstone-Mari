@@ -50,7 +50,6 @@ class LeaveBalanceCreate(BaseModel):
 class LeaveBalanceUpdate(BaseModel):
     total_leaves: Optional[int] = Field(default=None, gt=0)
     used_leaves: Optional[int] = None
-    remaining_leaves: Optional[int] = None
     is_active: Optional[bool] = None
 
 

@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from jose import jwt
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
@@ -14,11 +14,11 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 # =========================
 # CREATE JWT TOKEN
 # =========================
+
 def create_access_token(data: dict):
 
     to_encode = data.copy()
-
-    expire = datetime.utcnow() + timedelta(
+    expire = datetime.now(timezone.utc) + timedelta(
         minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
     )
 
@@ -30,7 +30,8 @@ def create_access_token(data: dict):
         algorithm=settings.ALGORITHM
     )
 
-    return encoded_jwt
+    return encoded_jwt, expire
+
 
 
 # =========================
@@ -41,8 +42,11 @@ from jose import JWTError
 def get_current_user(
     token: str = Depends(oauth2_scheme),
     db: Session = Depends(get_db)
-):
-
+    ):
+    db.query(AuthToken).filter(
+    AuthToken.expires_at < datetime.now(timezone.utc)
+    ).delete()
+    db.commit()
     credentials_exception = HTTPException(
         status_code=401,
         detail="Could not validate credentials"

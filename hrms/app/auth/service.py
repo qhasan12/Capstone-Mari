@@ -1,5 +1,5 @@
 import random
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
@@ -29,6 +29,16 @@ def verify_password(password, hashed):
 # REGISTER CREDENTIALS
 # =========================
 
+from datetime import datetime
+from sqlalchemy.orm import Session
+from fastapi import HTTPException
+
+from app.auth.models import AuthUser
+from app.auth.service import hash_password
+from app.employees.models import Employee
+from app.leave.models import LeaveType, LeaveBalance
+
+
 def register_user(db: Session, token: str, password: str):
 
     employee = db.query(Employee).filter(
@@ -48,6 +58,7 @@ def register_user(db: Session, token: str, password: str):
     if existing:
         raise HTTPException(400, "Account already exists")
 
+    # Create auth user
     user = AuthUser(
         email=employee.email,
         employee_id=employee.id,
@@ -55,6 +66,34 @@ def register_user(db: Session, token: str, password: str):
     )
 
     db.add(user)
+    db.flush()  # get user without committing yet
+
+    # =========================
+    # Allocate Leave Balances
+    # =========================
+    leave_types = db.query(LeaveType).filter(
+        LeaveType.is_active == True
+    ).all()
+
+    for lt in leave_types:
+
+        existing_balance = db.query(LeaveBalance).filter(
+            LeaveBalance.employee_id == employee.id,
+            LeaveBalance.leave_type_id == lt.id
+        ).first()
+
+        if not existing_balance:
+
+            balance = LeaveBalance(
+                employee_id=employee.id,
+                leave_type_id=lt.id,
+                total_leaves=lt.default_allocation,
+                used_leaves=0,
+                remaining_leaves=lt.default_allocation,
+                is_active=True
+            )
+
+            db.add(balance)
 
     # remove token after use
     employee.invite_token = None
@@ -69,37 +108,41 @@ def register_user(db: Session, token: str, password: str):
 # =========================
 # LOGIN
 # =========================
-
 def login_user(db: Session, email: str, password: str):
 
     user = db.query(AuthUser).filter(AuthUser.email == email).first()
 
+
+
     if not user:
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+        raise HTTPException(401, "Invalid credentials")
 
     if not verify_password(password, user.password_hash):
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+        raise HTTPException(401, "Invalid credentials")
 
     if not user.is_active:
-        raise HTTPException(status_code=403, detail="Account disabled")
+        raise HTTPException(403, "Account disabled")
 
-    token = create_access_token(
-        {
-            "user_id": user.id,
-            "employee_id": user.employee_id
-        }
-    )
-    db_token= AuthToken(
+    # remove expired tokens
+
+    if db.query(AuthToken).filter(AuthToken.user_id == user.id).first():
+        raise HTTPException(400, "User already logged in")
+
+    token, expiry = create_access_token({
+        "user_id": user.id,
+        "employee_id": user.employee_id
+    })
+
+    db_token = AuthToken(
         user_id=user.id,
-        token=token
+        token=token,
+        expires_at=expiry
     )
 
     db.add(db_token)
     db.commit()
-    db.refresh(db_token)
 
     return token
-
 
 # =========================
 # CHANGE PASSWORD
@@ -114,6 +157,8 @@ def change_password(
 
     if not verify_password(old_password, user.password_hash):
         raise HTTPException(status_code=400, detail="Old password incorrect")
+    if new_password == old_password:
+        raise HTTPException(status_code=400, detail="New password cannot be same as old password")
 
     user.password_hash = hash_password(new_password)
 
@@ -180,12 +225,21 @@ def reset_password(db: Session, email: str, new_password: str):
 
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+
     if not user.is_active:
         raise HTTPException(status_code=403, detail="Account disabled")
 
     if not user.otp_verified:
         raise HTTPException(status_code=400, detail="OTP verification required")
 
+    # check if new password equals old password
+    if verify_password(new_password, user.password_hash):
+        raise HTTPException(
+            status_code=400,
+            detail="New password cannot be same as old password"
+        )
+
+    # update password
     user.password_hash = hash_password(new_password)
 
     user.otp_code = None

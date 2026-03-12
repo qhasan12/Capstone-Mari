@@ -39,8 +39,8 @@ class AuthToken(Base):
 
     user_id = Column(Integer, ForeignKey("auth_users.id", ondelete="CASCADE"))
 
-    token = Column(String, unique=True, nullable=False)
-
-    created_at = Column(DateTime, server_default=func.now())
+    token = Column(String, unique=True, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    expires_at = Column(DateTime(timezone=True), nullable=False)
 
     user = relationship("AuthUser")

@@ -1,14 +1,14 @@
 from sqlalchemy import Column, Integer, String, Date, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 from app.core.database import Base
-
+from sqlalchemy import UniqueConstraint
 
 class LeaveType(Base):
     __tablename__ = "leave_types"
 
     id = Column(Integer, primary_key=True)
     name = Column(String(100), unique=True)
-    default_allocation = Column(Integer)
+    default_allocation = Column(Integer, nullable=False)
     is_active = Column(Boolean, default=True)
 
     balances = relationship("LeaveBalance", back_populates="leave_type")
@@ -30,7 +30,9 @@ class LeaveBalance(Base):
     employee = relationship("Employee", back_populates="leave_balances")
     leave_type = relationship("LeaveType", back_populates="balances")
 
-
+    __table_args__ = (
+    UniqueConstraint("employee_id", "leave_type_id", name="unique_employee_leave"),
+    )
 class LeaveRequest(Base):
     __tablename__ = "leave_requests"
 

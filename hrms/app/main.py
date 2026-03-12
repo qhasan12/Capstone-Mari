@@ -30,6 +30,7 @@ from app.training.routes import router as training_router
 from app.auth.routes import router as auth_router
 from app.common.seed_permissions import seed_permissions
 from app.common.seed_role_permissions import seed_role_permissions
+from app.common.seed_leave_types import seed_leave_types
 from app.common.seed import seed_initial_data
 # ✅ CREATE APP HERE
 app = FastAPI(title="HRMS API", version="1.0")
@@ -47,7 +48,9 @@ def startup_event():
     seed_roles(db)
     seed_permissions(db)
     seed_role_permissions(db)
+    seed_leave_types(db)
     seed_initial_data(db)
+
 
     db.close()
 # ==============================
