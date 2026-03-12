@@ -1,27 +1,39 @@
 from pydantic import BaseModel
 from datetime import date
+from typing import List, Optional
+
+
+class AssignTargets(BaseModel):
+
+    employees: list[int] | None = None
+    departments: list[int] | None = None
+    roles: list[int] | None = None
+    managers: list[int] | None = None
+    all_employees: bool = False
 
 
 class TrainingBase(BaseModel):
-    employee_id: int
-    training_title: str
+    title: str
+    description: Optional[str] = None
     training_date: date
-    status: str
 
 
 class TrainingCreate(TrainingBase):
-    pass
+    assign_to: AssignTargets
 
 
 class TrainingUpdate(BaseModel):
-    training_title: str | None = None
-    training_date: date | None = None
-    status: str | None = None
-    is_active: bool | None = None 
+    title: Optional[str] = None
+    description: Optional[str] = None
+    training_date: Optional[date] = None
+    is_active: Optional[bool] = None
 
 
-class TrainingResponse(TrainingBase):
+class TrainingResponse(BaseModel):
     id: int
+    title: str
+    description: Optional[str]
+    training_date: date
     is_active: bool
 
     class Config:

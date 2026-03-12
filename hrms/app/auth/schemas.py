@@ -2,8 +2,8 @@ from pydantic import BaseModel, EmailStr
 
 
 class RegisterRequest(BaseModel):
-    employee_id: int
-    password: str
+    token: str
+    password: str 
 
 
 class LoginRequest(BaseModel):

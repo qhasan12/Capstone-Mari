@@ -22,6 +22,7 @@ class AuthUser(Base):
 
     otp_code = Column(String(6), nullable=True)
     otp_expiry = Column(DateTime, nullable=True)
+    otp_verified = Column(Boolean, default=False)
 
     is_active = Column(Boolean, default=True)
 
@@ -29,3 +30,17 @@ class AuthUser(Base):
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
     employee = relationship("Employee", back_populates="auth_user")
+    
+    
+class AuthToken(Base):
+    __tablename__ = "auth_tokens"
+
+    id = Column(Integer, primary_key=True)
+
+    user_id = Column(Integer, ForeignKey("auth_users.id", ondelete="CASCADE"))
+
+    token = Column(String, unique=True, nullable=False)
+
+    created_at = Column(DateTime, server_default=func.now())
+
+    user = relationship("AuthUser")

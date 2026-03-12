@@ -25,20 +25,20 @@ def ensure_superadmin(current_user):
 # =========================
 def get_current_employee(db: Session, current_user):
 
+    if not current_user.employee_id:
+        raise HTTPException(
+            status_code=404,
+            detail="Employee record not found"
+        )
+
     employee = db.query(Employee).filter(
-        Employee.id == current_user.id
+        Employee.id == current_user.employee_id
     ).first()
 
     if not employee:
         raise HTTPException(
             status_code=404,
             detail="Employee record not found"
-        )
-
-    if not employee.is_active:
-        raise HTTPException(
-            status_code=403,
-            detail="Employee account is inactive"
         )
 
     return employee

@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.database import get_db
-from app.auth.models import AuthUser
+from app.auth.models import AuthUser, AuthToken
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
@@ -37,6 +37,7 @@ def create_access_token(data: dict):
 # GET CURRENT USER
 # =========================
 from jose import JWTError
+
 def get_current_user(
     token: str = Depends(oauth2_scheme),
     db: Session = Depends(get_db)
@@ -53,6 +54,7 @@ def get_current_user(
             settings.SECRET_KEY,
             algorithms=[settings.ALGORITHM]
         )
+
         user_id: int = payload.get("user_id")
 
         if user_id is None:
@@ -61,9 +63,27 @@ def get_current_user(
     except JWTError:
         raise credentials_exception
 
+    # 🔐 CHECK TOKEN EXISTS IN DB
+    token_record = db.query(AuthToken).filter(
+        AuthToken.token == token
+    ).first()
+
+    if not token_record:
+        raise HTTPException(
+            status_code=401,
+            detail="Token invalid or logged out"
+        )
+
+    # 👤 FETCH USER
     user = db.query(AuthUser).filter(AuthUser.id == user_id).first()
 
     if user is None:
         raise credentials_exception
+
+    if not user.is_active:
+        raise HTTPException(
+            status_code=403,
+            detail="Account disabled"
+        )
 
     return user
