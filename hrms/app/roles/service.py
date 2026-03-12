@@ -17,7 +17,10 @@ from app.core.rbac import (
 
 def create_role(db: Session, role_data, current_user):
 
-    ensure_superadmin(current_user)
+    # ensure_superadmin(current_user)
+
+    employee = get_current_employee(db, current_user)
+    require_permission(db, employee, "role:create")
 
     title = role_data.title.strip()
 
@@ -108,7 +111,9 @@ def get_role_by_id(db: Session, role_id: int, current_user):
 
 def update_role(db: Session, role_id: int, update_data, current_user):
 
-    ensure_superadmin(current_user)
+    # ensure_superadmin(current_user)
+    employee = get_current_employee(db, current_user)
+    require_permission(db, employee, "role:update")
 
     role = get_role_by_id(db, role_id, current_user)
 
@@ -144,7 +149,9 @@ def update_role(db: Session, role_id: int, update_data, current_user):
 
 def delete_role(db: Session, role_id: int, current_user):
 
-    ensure_superadmin(current_user)
+    # ensure_superadmin(current_user)
+    employee = get_current_employee(db, current_user)
+    require_permission(db, employee, "role:delete")
 
     role = get_role_by_id(db, role_id, current_user)
 

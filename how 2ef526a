@@ -1,0 +1,64 @@
+[33m2ef526a[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mrecovered-work[m[33m)[m update till roles according to documents
+[33m4972e1b[m[33m ([m[1;31morigin/alishba-branch[m[33m, [m[1;32malishba-branch[m[33m)[m upto the work
+[33ma356d16[m added permission RBAC till resignations- tarining left
+[33m874e46c[m[33m ([m[1;31morigin/new-branch-1[m[33m, [m[1;32mnew-branch-1[m[33m)[m recent
+[33m55c3608[m resolved bugs listed by Saad and Qamar (Monday)
+[33m6fe1ca8[m[33m ([m[1;31morigin/dev-branch[m[33m)[m applied searc, is_Active filtering, pagination in all the modules and made it consistent with RBAC Matrix
+[33m202d820[m applied RBAC to all modules other than roles and departments
+[33mf3bb842[m applied RBAC to roles and departments
+[33mabbe7c8[m[33m ([m[1;31morigin/new-branch[m[33m)[m added login, register, forget reset, verify otp
+[33m65405dc[m Merge branch 'qamar-branch' into dev-branch
+[33m198f013[m Clearance and leave fixed
+[33m8d9ae31[m Merge branch 'qamar-branch' into dev-branch
+[33m1b4159f[m test changes
+[33maf29579[m Merge branch 'dev-branch' of https://github.com/qhasan12/Capstone-Mari into qamar-branch
+[33m13aff44[m Merge branch 'dev-branch' of https://github.com/qhasan12/Capstone-Mari into dev-branch
+[33m2136ff3[m test
+[33m824d44d[m test fun2
+[33m4ecc15f[m test
+[33m0982de6[m test fun
+[33m003da71[m made changes in qamars apis
+[33m4c56fac[m updated roles
+[33m507f7fd[m Clean tracked cache files
+[33m2e1e9aa[m Remove pycache from tracking
+[33ma865a61[m qamar + dev merge
+[33mcb78b07[m qamar + dev merge
+[33m1b1cb9d[m qamar + dev merge
+[33mc559489[m Remove __pycache__ from tracking
+[33mf62ed0e[m to be Merged
+[33mbfb7297[m Merge pull request #6 from qhasan12/saad-updates
+[33m6a8071a[m Merge branch 'dev-branch' into saad-updates
+[33m4733340[m files edited
+[33ma4c3105[m files cleaned
+[33m2136280[m leaves, onboarding and resignation only
+[33mcd592a4[m consistent response and isactive added
+[33maa15f70[m Apply correct gitignore and remove cache files
+[33m2e14441[m Apply correct gitignore and remove cache files
+[33m3924db5[m added gitignore
+[33mb8e3cbe[m added gitignore
+[33m6c5badc[m cleaned departments and employees service.py
+[33md48a978[m patch updated
+[33mb533759[m roles updated consistent reponses for dept, employees, roles, hiring and posting
+[33m4323f78[m onboarding resignation & roles completed
+[33m5ed211e[m added consistent api responses for dep, employees, hirings and postings,created and updated at in each table , integrated alembic
+[33m5e0cfa5[m training routes
+[33m7b3a628[m Merge remote-tracking branch 'origin/alishba-branch' into saad-updates
+[33m95ac90f[m added roles
+[33mdfa65f9[m .env path changed
+[33m3d2c039[m test2
+[33ma44c836[m test
+[33mb05ea6b[m changes to all models
+[33m34d1563[m departments, employees and hiring/job posting working fine
+[33m12b395e[m[33m ([m[1;32mmain[m[33m)[m changes to all models
+[33me651933[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Merge pull request #3 from qhasan12/alishba-branch
+[33mf05414d[m test2
+[33m4924e2e[m Merge pull request #2 from qhasan12/alishba-branch
+[33mea96515[m test
+[33m32c45d5[m bla
+[33me75884f[m service.py modifications for alchemy
+[33m28dcdda[m Clear
+[33mc35a799[m Merge pull request #1 from qhasan12/alishba-branch
+[33mb3c2ced[m database added for employees
+[33mebcbf3f[m Merge branch 'main' of https://github.com/qhasan12/Capstone-Mari git config pull.rebase false# especially if it merges an updated upstream into a topic branch. git pull origin main --allow-unrelated-histories!
+[33m0431bb0[m Initial HRMS project
+[33mf816eab[m Initial commit

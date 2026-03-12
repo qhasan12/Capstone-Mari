@@ -1,0 +1,94 @@
+[33m222f259[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mqamar-branch[m[33m, [m[1;31morigin/qamar-branch[m[33m)[m HEAD@{0}: reset: moving to origin/qamar-branch
+[33m2ef526a[m HEAD@{1}: commit: update till roles according to documents
+[33m4972e1b[m[33m ([m[1;31morigin/alishba-branch[m[33m, [m[1;32malishba-branch[m[33m)[m HEAD@{2}: reset: moving to origin/alishba-branch
+[33m222f259[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mqamar-branch[m[33m, [m[1;31morigin/qamar-branch[m[33m)[m HEAD@{3}: reset: moving to HEAD
+[33m222f259[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mqamar-branch[m[33m, [m[1;31morigin/qamar-branch[m[33m)[m HEAD@{4}: checkout: moving from alishba-branch to qamar-branch
+[33m4972e1b[m[33m ([m[1;31morigin/alishba-branch[m[33m, [m[1;32malishba-branch[m[33m)[m HEAD@{5}: commit: upto the work
+[33ma356d16[m HEAD@{6}: reset: moving to origin/alishba-branch
+[33m874e46c[m[33m ([m[1;31morigin/new-branch-1[m[33m, [m[1;32mnew-branch-1[m[33m)[m HEAD@{7}: reset: moving to origin/alishba-branch
+[33mc35a799[m HEAD@{8}: checkout: moving from new-branch-1 to alishba-branch
+[33m874e46c[m[33m ([m[1;31morigin/new-branch-1[m[33m, [m[1;32mnew-branch-1[m[33m)[m HEAD@{9}: reset: moving to origin/alishba-branch
+[33m874e46c[m[33m ([m[1;31morigin/new-branch-1[m[33m, [m[1;32mnew-branch-1[m[33m)[m HEAD@{10}: reset: moving to origin/alishba-branch
+[33m222f259[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mqamar-branch[m[33m, [m[1;31morigin/qamar-branch[m[33m)[m HEAD@{11}: checkout: moving from new-branch-1 to new-branch-1
+[33m222f259[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mqamar-branch[m[33m, [m[1;31morigin/qamar-branch[m[33m)[m HEAD@{12}: reset: moving to HEAD
+[33m222f259[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mqamar-branch[m[33m, [m[1;31morigin/qamar-branch[m[33m)[m HEAD@{13}: checkout: moving from new-branch to new-branch-1
+[33m7e90aa9[m[33m ([m[1;32mnew-branch[m[33m)[m HEAD@{14}: reset: moving to HEAD
+[33m7e90aa9[m[33m ([m[1;32mnew-branch[m[33m)[m HEAD@{15}: checkout: moving from qamar-branch to new-branch
+[33m222f259[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mqamar-branch[m[33m, [m[1;31morigin/qamar-branch[m[33m)[m HEAD@{16}: reset: moving to HEAD
+[33m222f259[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mqamar-branch[m[33m, [m[1;31morigin/qamar-branch[m[33m)[m HEAD@{17}: checkout: moving from alishba-branch to qamar-branch
+[33mc35a799[m HEAD@{18}: reset: moving to HEAD
+[33mc35a799[m HEAD@{19}: checkout: moving from qamar-branch to alishba-branch
+[33m222f259[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mqamar-branch[m[33m, [m[1;31morigin/qamar-branch[m[33m)[m HEAD@{20}: pull origin qamar-branch: Merge made by the 'ort' strategy.
+[33mf11c38d[m HEAD@{21}: commit: validation updates
+[33m6fe1ca8[m[33m ([m[1;31morigin/dev-branch[m[33m)[m HEAD@{22}: reset: moving to origin/dev-branch
+[33m54cfb2b[m HEAD@{23}: commit: Updated from dev-branch
+[33m1c66e7e[m HEAD@{24}: commit: Updated from dev-branch
+[33me10f0b4[m HEAD@{25}: commit (merge): Updated from dev-branch
+[33mf9ce233[m[33m ([m[1;32mdev-branch[m[33m)[m HEAD@{26}: checkout: moving from dev-branch to qamar-branch
+[33mf9ce233[m[33m ([m[1;32mdev-branch[m[33m)[m HEAD@{27}: reset: moving to HEAD
+[33mf9ce233[m[33m ([m[1;32mdev-branch[m[33m)[m HEAD@{28}: checkout: moving from qamar-branch to dev-branch
+[33mf9ce233[m[33m ([m[1;32mdev-branch[m[33m)[m HEAD@{29}: merge dev-branch: Fast-forward
+[33m9956754[m HEAD@{30}: checkout: moving from dev-branch to qamar-branch
+[33mf9ce233[m[33m ([m[1;32mdev-branch[m[33m)[m HEAD@{31}: commit: update on role
+[33m36493c6[m HEAD@{32}: pull origin dev-branch: Fast-forward
+[33m9956754[m HEAD@{33}: checkout: moving from qamar-branch to dev-branch
+[33m9956754[m HEAD@{34}: merge dev-branch: Fast-forward
+[33m5890da9[m HEAD@{35}: checkout: moving from dev-branch to qamar-branch
+[33m9956754[m HEAD@{36}: checkout: moving from qamar-branch to dev-branch
+[33m5890da9[m HEAD@{37}: checkout: moving from dev-branch to qamar-branch
+[33m9956754[m HEAD@{38}: merge qamar-branch: Merge made by the 'ort' strategy.
+[33m736e678[m HEAD@{39}: checkout: moving from qamar-branch to dev-branch
+[33m5890da9[m HEAD@{40}: commit: schemas dept validation
+[33m5d21d57[m HEAD@{41}: checkout: moving from dev-branch to qamar-branch
+[33m736e678[m HEAD@{42}: merge qamar-branch: Merge made by the 'ort' strategy.
+[33m7e90aa9[m[33m ([m[1;32mnew-branch[m[33m)[m HEAD@{43}: checkout: moving from qamar-branch to dev-branch
+[33m5d21d57[m HEAD@{44}: commit: Consistent response from all: pagination + search
+[33m0c22dd1[m HEAD@{45}: checkout: moving from dev-branch to qamar-branch
+[33m7e90aa9[m[33m ([m[1;32mnew-branch[m[33m)[m HEAD@{46}: merge new-branch: Fast-forward
+[33m65405dc[m HEAD@{47}: checkout: moving from new-branch to dev-branch
+[33m7e90aa9[m[33m ([m[1;32mnew-branch[m[33m)[m HEAD@{48}: commit: auth flow completed and departments combined
+[33mabbe7c8[m[33m ([m[1;31morigin/new-branch[m[33m)[m HEAD@{49}: pull origin dev-branch: Fast-forward
+[33m198f013[m HEAD@{50}: checkout: moving from qamar-branch to new-branch
+[33m0c22dd1[m HEAD@{51}: commit: departments routes and service updates
+[33m198f013[m HEAD@{52}: checkout: moving from new-branch to qamar-branch
+[33m198f013[m HEAD@{53}: checkout: moving from qamar-branch to new-branch
+[33m198f013[m HEAD@{54}: checkout: moving from dev-branch to qamar-branch
+[33m65405dc[m HEAD@{55}: merge qamar-branch: Merge made by the 'ort' strategy.
+[33m8d9ae31[m HEAD@{56}: checkout: moving from qamar-branch to dev-branch
+[33m198f013[m HEAD@{57}: commit: Clearance and leave fixed
+[33m1b4159f[m HEAD@{58}: checkout: moving from dev-branch to qamar-branch
+[33m8d9ae31[m HEAD@{59}: merge qamar-branch: Merge made by the 'ort' strategy.
+[33m13aff44[m HEAD@{60}: checkout: moving from qamar-branch to dev-branch
+[33m1b4159f[m HEAD@{61}: commit: test changes
+[33maf29579[m HEAD@{62}: pull origin dev-branch: Merge made by the 'ort' strategy.
+[33m2136ff3[m HEAD@{63}: checkout: moving from dev-branch to qamar-branch
+[33m13aff44[m HEAD@{64}: checkout: moving from dev-branch to dev-branch
+[33m13aff44[m HEAD@{65}: pull origin dev-branch: Merge made by the 'ort' strategy.
+[33m4ecc15f[m HEAD@{66}: checkout: moving from qamar-branch to dev-branch
+[33m2136ff3[m HEAD@{67}: commit: test
+[33m4ecc15f[m HEAD@{68}: checkout: moving from dev-branch to qamar-branch
+[33m4ecc15f[m HEAD@{69}: merge qamar-branch: Fast-forward
+[33m003da71[m HEAD@{70}: checkout: moving from qamar-branch to dev-branch
+[33m4ecc15f[m HEAD@{71}: commit: test
+[33m003da71[m HEAD@{72}: pull origin dev-branch: Fast-forward
+[33m507f7fd[m HEAD@{73}: checkout: moving from dev-branch to qamar-branch
+[33m003da71[m HEAD@{74}: pull origin dev-branch: Fast-forward
+[33m507f7fd[m HEAD@{75}: reset: moving to HEAD
+[33m507f7fd[m HEAD@{76}: merge qamar-branch: Fast-forward
+[33mbfb7297[m HEAD@{77}: checkout: moving from qamar-branch to dev-branch
+[33m507f7fd[m HEAD@{78}: commit: Clean tracked cache files
+[33m2e1e9aa[m HEAD@{79}: commit: Remove pycache from tracking
+[33ma865a61[m HEAD@{80}: commit: qamar + dev merge
+[33mcb78b07[m HEAD@{81}: commit: qamar + dev merge
+[33m1b1cb9d[m HEAD@{82}: commit (merge): qamar + dev merge
+[33mc559489[m HEAD@{83}: commit: Remove __pycache__ from tracking
+[33mf62ed0e[m HEAD@{84}: checkout: moving from dev-branch to qamar-branch
+[33mbfb7297[m HEAD@{85}: checkout: moving from qamar-branch to dev-branch
+[33mf62ed0e[m HEAD@{86}: checkout: moving from qamar-branch to qamar-branch
+[33mf62ed0e[m HEAD@{87}: commit: to be Merged
+[33m2136280[m HEAD@{88}: commit: leaves, onboarding and resignation only
+[33m4323f78[m HEAD@{89}: commit: onboarding resignation & roles completed
+[33mdfa65f9[m HEAD@{90}: commit: .env path changed
+[33m3d2c039[m HEAD@{91}: commit (merge): test2
+[33ma44c836[m HEAD@{92}: pull origin qamar-branch --rebase (finish): returning to refs/heads/qamar-branch
+[33ma
