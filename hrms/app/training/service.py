@@ -4,7 +4,7 @@ from fastapi import HTTPException, status
 
 from .models import Training, TrainingAssignment
 from app.employees.models import Employee
-from app.core.rbac import get_current_employee
+from app.core.rbac import get_current_employee, has_permission,require_permission
 
 
 # =====================================================
@@ -15,8 +15,21 @@ def create_training(db: Session, data, current_user):
 
     creator = get_current_employee(db, current_user)
 
-    if creator.role.title not in ["SA", "HR"]:
-        raise HTTPException(403, "Not allowed to create training")
+    require_permission(db, creator,"training:create")
+    # =========================
+    # Prevent duplicate training
+    # =========================
+    existing = db.query(Training).filter(
+        Training.title == data.title,
+        Training.training_date == data.training_date,
+        Training.is_active == True
+    ).first()
+
+    if existing:
+        raise HTTPException(
+            status_code=400,
+            detail="Training with same title and date already exists"
+        )
 
     training = Training(
         title=data.title,
@@ -95,10 +108,17 @@ def get_trainings(
     page: int,
     per_page: int,
     search: str | None,
-    is_active: bool | None
+    is_active: bool | None=True
 ):
 
     employee = get_current_employee(db, current_user)
+    if not (
+        has_permission(db,employee, "training:view") or
+        has_permission(db, employee, "training:view_team") or
+        has_permission(db, employee, "training:view_self")
+    ):
+
+        raise HTTPException(401,"Permission denied")
 
     query = db.query(Training)
 
@@ -108,21 +128,31 @@ def get_trainings(
     if search:
         query = query.filter(Training.title.ilike(f"%{search}%"))
 
-    if employee.role.title == "EMP":
-        query = query.join(TrainingAssignment).filter(
-            TrainingAssignment.employee_id == employee.id
-        )
 
-    if employee.role.title == "MGR":
+    # SA / HR → all trainings
+    if has_permission(db, employee, "training:view"):
+        pass
+
+    # Manager → team + self
+    elif has_permission(db, employee, "training:view_team"):
 
         team_ids = db.query(Employee.id).filter(
             Employee.manager_id == employee.id
         )
 
         query = query.join(TrainingAssignment).filter(
-            TrainingAssignment.employee_id.in_(team_ids)
+            or_(
+                TrainingAssignment.employee_id == employee.id,
+                TrainingAssignment.employee_id.in_(team_ids)
+            )
         )
 
+    # Employee → self only
+    elif has_permission(db, employee, "training:view_self"):
+
+        query = query.join(TrainingAssignment).filter(
+            TrainingAssignment.employee_id == employee.id
+        )
     total = query.count()
 
     trainings = (
@@ -142,17 +172,57 @@ def get_trainings(
 
 def get_training_by_id(db: Session, training_id: int, current_user):
 
-    get_current_employee(db, current_user)
+    employee =get_current_employee(db, current_user)
+    if not (
+        has_permission(db, employee, "training:view") or
+        has_permission(db, employee, "training:view_team") or
+        has_permission(db, employee, "training:view_self")
+    ):
+        raise HTTPException(403, "Permission denied")
 
     training = db.query(Training).filter(
         Training.id == training_id
     ).first()
-
     if not training:
         raise HTTPException(
             status_code=404,
             detail="Training not found"
         )
+
+    # SA / HR
+    if has_permission(db, employee, "training:view"):
+        return training
+
+    # Manager → team + self
+    if has_permission(db, employee, "training:view_team"):
+
+        team_ids = db.query(Employee.id).filter(
+            Employee.manager_id == employee.id
+        )
+
+        assignment = db.query(TrainingAssignment).filter(
+            TrainingAssignment.training_id == training_id,
+            or_(
+                TrainingAssignment.employee_id == employee.id,
+                TrainingAssignment.employee_id.in_(team_ids)
+            )
+        ).first()
+
+        if not assignment:
+            raise HTTPException(403, "Not allowed")
+
+        return training
+
+    # Employee → self only
+    if has_permission(db, employee, "training:view_self"):
+
+        assignment = db.query(TrainingAssignment).filter(
+            TrainingAssignment.training_id == training_id,
+            TrainingAssignment.employee_id == employee.id
+        ).first()
+
+        if not assignment:
+            raise HTTPException(403, "Not allowed")
 
     return training
 
@@ -164,9 +234,7 @@ def get_training_by_id(db: Session, training_id: int, current_user):
 def update_training(db: Session, training_id: int, data, current_user):
 
     employee = get_current_employee(db, current_user)
-
-    if employee.role.title not in ["SA", "HR"]:
-        raise HTTPException(403, "Not allowed to update training")
+    require_permission(db, employee,"training:update")
 
     training = db.query(Training).filter(
         Training.id == training_id
@@ -193,6 +261,7 @@ def update_training(db: Session, training_id: int, data, current_user):
 def delete_training(db: Session, training_id: int, current_user):
 
     employee = get_current_employee(db, current_user)
+    require_permission(db, employee, "training:delete")
 
     if employee.role.title not in ["SA", "HR"]:
         raise HTTPException(403, "Not allowed")

@@ -109,12 +109,16 @@ ROLE_PERMISSION_MAP = {
         "leave_request:reject",
         "leave_request:cancel",
 
+        
         "leave_balance:view_team",
+        
+        
+        # trainings
         "training:view_team",
+        
         "hiring_request:create",
         "hiring_request:update",
-        
-        
+        "hiring_request:view",
         
 
         "resignation:view_team",
@@ -149,7 +153,9 @@ ROLE_PERMISSION_MAP = {
         "resignation:view_self",
         "resignation:withdraw",
 
+        # trainings
         "training:view_self",
+        
         "job_posting:view",
         "leave_type:view",
         "department:view",
