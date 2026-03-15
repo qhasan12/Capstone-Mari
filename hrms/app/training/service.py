@@ -28,7 +28,7 @@ def create_training(db: Session, data, current_user):
     if existing:
         raise HTTPException(
             status_code=400,
-            detail="Training with same title and date already exists"
+            detail="Training with same title or date already exists"
         )
 
     training = Training(
@@ -239,6 +239,12 @@ def update_training(db: Session, training_id: int, data, current_user):
     training = db.query(Training).filter(
         Training.id == training_id
     ).first()
+    
+    if training.title==data.title:
+        raise HTTPException(
+            status_code=400,
+            detail="Training with same title or date already exists"
+        )
 
     if not training:
         raise HTTPException(404, "Training not found")
