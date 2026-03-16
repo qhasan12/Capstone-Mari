@@ -231,6 +231,7 @@ def get_training_by_id(db: Session, training_id: int, current_user):
 # UPDATE
 # =====================================================
 
+
 def update_training(db: Session, training_id: int, data, current_user):
 
     employee = get_current_employee(db, current_user)
@@ -239,6 +240,12 @@ def update_training(db: Session, training_id: int, data, current_user):
     training = db.query(Training).filter(
         Training.id == training_id
     ).first()
+    
+    if training.title==data.title:
+        raise HTTPException(
+            status_code=400,
+            detail="Training with same title or date already exists"
+        )
 
     if not training:
         raise HTTPException(404, "Training not found")
