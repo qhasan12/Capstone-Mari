@@ -171,7 +171,7 @@ def seed_initial_data(db: Session):
         if not onboarding:
             onboarding = Onboarding(
                 employee_id=employee.id,
-                status="Initiated",
+                stage="Initiated",
                 is_active=True
             )
             db.add(onboarding)
