@@ -6,8 +6,9 @@ python-dotenv
 pydantic[email]
 alembic
 python-jose 
-passlib[bcrypt]
 python-jose 
 python-multipart
 aiosmtplib 
 email-validator
+bcrypt==4.0.1
+passlib[bcrypt]==1.7.4
