@@ -122,3 +122,5 @@ app.include_router(employee_router, prefix="/api/v1/employees", tags=["Employees
 app.include_router(department_router, prefix="/api/v1/departments", tags=["Departments"])
 
 app.include_router(training_router, prefix="/api/v1/trainings", tags=["Trainings"])
+
+app.include_router(employee_router, prefix="/employees")

@@ -119,3 +119,12 @@ def delete_employee(
         message="Employee deactivated successfully",
         data=schemas.EmployeeResponse.model_validate(employee)
     )
+
+@router.post("/agent/query")
+def employee_agent(
+    query: str,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    from app.agents.employee.agent_service import handle_query
+    return handle_query(query, db, current_user)
