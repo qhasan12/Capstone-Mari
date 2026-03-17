@@ -109,8 +109,18 @@ def register_user(db: Session, token: str, password: str):
 # LOGIN
 # =========================
 def login_user(db: Session, email: str, password: str):
+    db.query(AuthToken).filter(AuthToken.expires_at < datetime.now(timezone.utc)).delete()
+    db.commit()
+    
+    existing_token = db.query(AuthToken).filter(
+        AuthToken.user_id == user.id,
+        AuthToken.expires_at > datetime.now(timezone.utc)
+    ).first()
+    if existing_token:
+        raise HTTPException(400, "User already logged in")
 
     user = db.query(AuthUser).filter(AuthUser.email == email).first()
+
 
 
 
@@ -125,8 +135,6 @@ def login_user(db: Session, email: str, password: str):
 
     # remove expired tokens
 
-    if db.query(AuthToken).filter(AuthToken.user_id == user.id).first():
-        raise HTTPException(400, "User already logged in")
 
     token, expiry = create_access_token({
         "user_id": user.id,
