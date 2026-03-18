@@ -13,7 +13,21 @@ router = APIRouter()
 # =========================
 # CREATE
 # =========================
-@router.post("/", status_code=status.HTTP_201_CREATED)
+# @router.post("/", status_code=status.HTTP_201_CREATED)
+# def create_employee(
+#     data: schemas.EmployeeCreate,
+#     db: Session = Depends(get_db),
+#     current_user = Depends(get_current_user)
+# ):
+#     employee = service.create_employee(db, data, current_user)
+
+#     return APIResponse(
+#         code=201,
+#         message="Employee created successfully",
+#         data=schemas.EmployeeResponse.model_validate(employee)
+#     )
+
+@router.post("/", status_code=201)
 def create_employee(
     data: schemas.EmployeeCreate,
     db: Session = Depends(get_db),
@@ -21,11 +35,13 @@ def create_employee(
 ):
     employee = service.create_employee(db, data, current_user)
 
-    return APIResponse(
-        code=201,
-        message="Employee created successfully",
-        data=schemas.EmployeeResponse.model_validate(employee)
-    )
+    return {
+        "id": employee.id,
+        "full_name": employee.full_name,
+        "email": employee.email,
+        "department_id": employee.department_id,
+        "role_id": employee.role_id
+    }
 
 
 # =========================
