@@ -62,9 +62,8 @@ DEFAULT_PERMISSIONS = [
     "training:view",
     "training:update",
     "training:delete",
-    "training:view_self",
     "training:view_team",
-    
+    "training:view_self",
 
     # =========================
     # Leave Types

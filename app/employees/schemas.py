@@ -12,6 +12,8 @@ class EmployeeCreate(BaseModel):
     manager_id: Optional[int] = None
     joining_date: Optional[date] = None
     salary: Optional[float] = None
+    # created_by: int
+    # created_at: datetime
 
 
 class EmployeeUpdate(BaseModel):
@@ -39,6 +41,10 @@ class EmployeeResponse(BaseModel):
     is_active: bool
     created_at: datetime
     updated_at: datetime
+    created_by: Optional[int]
+    updated_by: Optional[int]
+    deleted_by: Optional[int]
+    deleted_at: Optional[datetime]
 
     class Config:
         from_attributes = True

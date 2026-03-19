@@ -111,14 +111,19 @@ def get_employee_by_id(db: Session, employee_id: int, current_user):
 def create_employee(db: Session, data, current_user):
 
     current_employee = get_current_employee(db, current_user)
-
     require_permission(db, current_employee, "employee:create")
 
     full_name = data.full_name.strip()
+    # print(current_employee.id)
+
+    # =========================
+    # VALIDATIONS
+    # =========================
 
     # Email uniqueness
     if db.query(Employee).filter(Employee.email == data.email).first():
         raise HTTPException(400, "Email already exists")
+
     if db.query(Employee).filter(Employee.personal_email == data.personal_email).first():
         raise HTTPException(400, "Personal email already exists")
 
@@ -154,29 +159,66 @@ def create_employee(db: Session, data, current_user):
         if not manager:
             raise HTTPException(400, "Invalid manager")
 
+    # =========================
+    # CREATE EMPLOYEE
+    # =========================
+
     employee = Employee(**data.model_dump())
     employee.full_name = full_name
+
+    employee.created_at = datetime.utcnow()
+    employee.created_by = current_employee.id
 
     db.add(employee)
     db.commit()
     db.refresh(employee)
-    token=str(uuid.uuid4())
-    employee.invite_token=token
-    employee.invite_expiry=datetime.utcnow() + timedelta(days=7)
-    db.commit()
-    send_email(
-    employee.personal_email,
-    "HRMS Account Activation",
-    f"Activate your account using this token:\n\n{token}"
-    )
-    #auto onboarding creation for new employee
-    from app.onboarding.models import Onboarding
-    onboarding = Onboarding(
-        employee_id=employee.id,
-        stage="Initiated"
-    )
-    db.add(onboarding)
-    db.commit()
+
+    # =========================
+    # INVITE TOKEN
+    # =========================
+
+    try:
+        token = str(uuid.uuid4())
+        employee.invite_token = token
+        employee.invite_expiry = datetime.utcnow() + timedelta(days=7)
+        db.commit()
+    except Exception as e:
+        print("Token generation failed:", str(e))
+
+    # =========================
+    # EMAIL (SAFE)
+    # =========================
+
+    try:
+        send_email(
+            employee.personal_email,
+            "HRMS Account Activation",
+            f"Activate your account using this token:\n\n{token}"
+        )
+    except Exception as e:
+        print("Email failed:", str(e))
+
+    # =========================
+    # ONBOARDING (SAFE)
+    # =========================
+
+    try:
+        from app.onboarding.models import Onboarding
+
+        onboarding = Onboarding(
+            employee_id=employee.id,
+            stage="Initiated"
+        )
+        db.add(onboarding)
+        db.commit()
+
+    except Exception as e:
+        print("Onboarding failed:", str(e))
+
+    # =========================
+    # RETURN CLEAN RESPONSE
+    # =========================
+
     return employee
 
 

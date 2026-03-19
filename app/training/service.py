@@ -28,7 +28,7 @@ def create_training(db: Session, data, current_user):
     if existing:
         raise HTTPException(
             status_code=400,
-            detail="Training with same title or date already exists"
+            detail="Training with same title and date already exists"
         )
 
     training = Training(
