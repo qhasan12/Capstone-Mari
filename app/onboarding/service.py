@@ -4,6 +4,7 @@ from sqlalchemy import or_
 
 from app.core.rbac import get_current_employee,has_permission,require_permission
 from .models import Onboarding
+from datetime import datetime
 
 
 # =====================================================
@@ -133,6 +134,9 @@ def update_onboarding(db: Session, onboarding_id: int, data, current_user):
     elif onboarding.appointment_letter_generated:
         onboarding.stage = "Appointment Generated"
 
+    onboarding.updated_at = datetime.utcnow()
+    onboarding.updated_by = employee.id
+
     db.commit()
     db.refresh(onboarding)
 
@@ -158,6 +162,8 @@ def soft_delete_onboarding(db: Session, onboarding_id: int, current_user):
         raise HTTPException(400, "Onboarding already inactive")
 
     onboarding.is_active = False
+    onboarding.deleted_at = datetime.utcnow()   # ✅ ADD
+    onboarding.deleted_by = employee.id   
 
     db.commit()
 

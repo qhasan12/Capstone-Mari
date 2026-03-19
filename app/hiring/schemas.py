@@ -36,7 +36,7 @@ class HiringRequestUpdate(BaseModel):
 
 class HiringRequestResponse(HiringRequestBase):
     id: int
-    manager_id: int
+    manager_id: Optional[int] = None
     manager_approved: bool
     manager_approved_at: Optional[datetime]
     created_by: Optional[int]

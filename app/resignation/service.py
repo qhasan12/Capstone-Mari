@@ -1,6 +1,8 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
 from sqlalchemy import or_
+from datetime import datetime
+
 
 from .models import Resignation, ClearanceRecord
 from app.employees.models import Employee
@@ -81,6 +83,9 @@ def create_resignation(db: Session, data, current_user):
         status="Pending Approval",
         is_active=True
     )
+
+    resignation.created_by = employee.id  
+
     print(resignation)
     db.add(resignation)
     db.flush()
@@ -247,6 +252,7 @@ def update_resignation(db: Session, resignation_id: int, data, current_user):
         if update_data["status"] == "Approved":
             resignation.manager_approved = True
             clearance = ClearanceRecord(resignation_id=resignation.id)
+            clearance.created_by = employee.id
             db.add(clearance)
             db.commit()
             db.refresh(resignation)
@@ -263,6 +269,9 @@ def update_resignation(db: Session, resignation_id: int, data, current_user):
 
     else:
         raise HTTPException(403, "Permission denied")
+    
+    resignation.updated_at = datetime.utcnow()
+    resignation.updated_by = employee.id
 
     db.commit()
     db.refresh(resignation)
@@ -292,12 +301,14 @@ def deactivate_resignation(db: Session, resignation_id: int, current_user):
             raise HTTPException(403)
 
         resignation.status = "Withdrawn"
-        resignation.is_active = False
+        resignation.deleted_at = datetime.utcnow()
+        resignation.deleted_by = employee.id
 
     # HR / SA delete
     elif role in ["HR", "SA"]:
 
-        resignation.is_active = False
+        resignation.deleted_at = datetime.utcnow()
+        resignation.deleted_by = employee.id
 
     else:
         raise HTTPException(403)
@@ -407,6 +418,8 @@ def update_clearance(db: Session, resignation_id: int, data, current_user):
         clearance.email_deactivated
     )
     
+    clearance.updated_at = datetime.utcnow()
+    clearance.updated_by = employee.id
 
     db.commit()
     db.refresh(clearance)
@@ -432,6 +445,8 @@ def deactivate_clearance(db: Session, resignation_id: int, current_user):
     clearance = get_clearance_by_resignation_id(db, resignation_id, current_user)
 
     clearance.is_active = False
+    clearance.deleted_at = datetime.utcnow()
+    clearance.deleted_by = employee.id
 
     db.commit()
     db.refresh(clearance)

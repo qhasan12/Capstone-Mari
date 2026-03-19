@@ -27,8 +27,14 @@ class RoleResponse(BaseModel):
     level: Optional[int]
     description: Optional[str]
     is_active: bool
-    created_at: datetime
-    updated_at: datetime
+
+    # ✅ ADD AUDIT
+    created_at: Optional[datetime]
+    created_by: Optional[int]
+    updated_at: Optional[datetime]
+    updated_by: Optional[int]
+    deleted_at: Optional[datetime]
+    deleted_by: Optional[int]
 
     class Config:
         from_attributes = True

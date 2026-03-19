@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, model_validator
-from datetime import date
+from datetime import date, datetime
 from typing import Optional
 from enum import Enum
 
@@ -33,6 +33,12 @@ class LeaveTypeResponse(BaseModel):
     default_allocation: int
     is_active: bool
 
+    created_by: Optional[int] = None
+    created_at: Optional[datetime] = None
+
+    updated_by: Optional[int] = None
+    updated_at: Optional[datetime] = None
+
     class Config:
         from_attributes = True
 
@@ -61,6 +67,11 @@ class LeaveBalanceResponse(BaseModel):
     used_leaves: int
     remaining_leaves: int
     is_active: bool
+    created_by: Optional[int] = None
+    created_at: Optional[datetime] = None
+    updated_by: Optional[int] = None
+    updated_at: Optional[datetime] = None
+    
 
     class Config:
         from_attributes = True
@@ -98,6 +109,10 @@ class LeaveRequestResponse(BaseModel):
     reason: Optional[str]
     status: LeaveStatus
     is_active: bool 
+    created_by: Optional[int] = None
+    created_at: Optional[datetime] = None
+    updated_by: Optional[int] = None
+    updated_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True

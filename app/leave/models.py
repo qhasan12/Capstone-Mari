@@ -2,6 +2,10 @@ from sqlalchemy import Column, Integer, String, Date, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 from sqlalchemy import UniqueConstraint
+from sqlalchemy import Column, Integer, DateTime, ForeignKey
+from sqlalchemy.sql import func
+
+
 
 class LeaveType(Base):
     __tablename__ = "leave_types"
@@ -11,9 +15,16 @@ class LeaveType(Base):
     default_allocation = Column(Integer, nullable=False)
     is_active = Column(Boolean, default=True)
 
+    # simple audit (optional)
+    created_at = Column(DateTime, server_default=func.now())
+    created_by = Column(Integer, nullable=True)
+    updated_at = Column(DateTime, nullable=True)
+    updated_by = Column(Integer, nullable=True)
+    deleted_at = Column(DateTime, nullable=True)
+    deleted_by = Column(Integer, nullable=True)
+
     balances = relationship("LeaveBalance", back_populates="leave_type")
     requests = relationship("LeaveRequest", back_populates="leave_type")
-
 
 class LeaveBalance(Base):
     __tablename__ = "leave_balances"
@@ -27,12 +38,13 @@ class LeaveBalance(Base):
     remaining_leaves = Column(Integer)
     is_active = Column(Boolean, default=True)
 
+    created_at = Column(DateTime, server_default=func.now())
+    created_by = Column(Integer, nullable=True)
+
     employee = relationship("Employee", back_populates="leave_balances")
     leave_type = relationship("LeaveType", back_populates="balances")
 
-    __table_args__ = (
-    UniqueConstraint("employee_id", "leave_type_id", name="unique_employee_leave"),
-    )
+
 class LeaveRequest(Base):
     __tablename__ = "leave_requests"
 
@@ -45,6 +57,14 @@ class LeaveRequest(Base):
     reason = Column(String(500))
     status = Column(String(50))
     is_active = Column(Boolean, default=True)
+
+    # simple audit
+    created_at = Column(DateTime, server_default=func.now())
+    created_by = Column(Integer, nullable=True)
+    updated_at = Column(DateTime, nullable=True)
+    updated_by = Column(Integer, nullable=True)
+    deleted_at = Column(DateTime, nullable=True)
+    deleted_by = Column(Integer, nullable=True)
 
     employee = relationship("Employee", back_populates="leave_requests")
     leave_type = relationship("LeaveType", back_populates="requests")

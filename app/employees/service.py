@@ -299,6 +299,9 @@ def update_employee(db: Session, employee_id: int, data, current_user):
     for key, value in update_data.items():
         setattr(employee, key, value)
 
+    employee.updated_at = datetime.utcnow()
+    employee.updated_by = current_employee.id
+
     db.commit()
     db.refresh(employee)
 
@@ -324,6 +327,9 @@ def delete_employee(db: Session, employee_id: int, current_user):
         raise HTTPException(400, "Employee already inactive")
 
     employee.is_active = False
+
+    employee.deleted_at = datetime.utcnow()
+    employee.deleted_by = current_employee.id
 
     db.commit()
     db.refresh(employee)

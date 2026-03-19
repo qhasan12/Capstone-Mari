@@ -40,7 +40,7 @@ class EmployeeResponse(BaseModel):
     salary: Optional[float]
     is_active: bool
     created_at: datetime
-    updated_at: datetime
+    updated_at: Optional[datetime] = None
     created_by: Optional[int]
     updated_by: Optional[int]
     deleted_by: Optional[int]

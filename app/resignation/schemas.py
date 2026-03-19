@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from datetime import date
 from typing import Optional
+from datetime import datetime
 
 
 # ==============================
@@ -29,6 +30,14 @@ class ResignationResponse(BaseModel):
     status: Optional[str]
     is_active: Optional[bool] = True
 
+    # ✅ AUDIT
+    created_at: Optional[datetime] = None
+    created_by: Optional[int] = None
+    updated_at: Optional[datetime] = None
+    updated_by: Optional[int] = None
+    deleted_at: Optional[datetime] = None
+    deleted_by: Optional[int] = None
+
     class Config:
         from_attributes = True
 
@@ -52,6 +61,14 @@ class ClearanceResponse(BaseModel):
     email_deactivated: Optional[bool] = False
     clearance_completed: Optional[bool] = False
     is_active: Optional[bool] = True
+
+    # ✅ AUDIT
+    created_at: Optional[datetime] = None
+    created_by: Optional[int] = None
+    updated_at: Optional[datetime] = None
+    updated_by: Optional[int] = None
+    deleted_at: Optional[datetime] = None
+    deleted_by: Optional[int] = None
 
     class Config:
         from_attributes = True

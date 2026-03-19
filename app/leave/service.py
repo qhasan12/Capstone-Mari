@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
 from sqlalchemy import or_
-
+from datetime import datetime
 from .models import LeaveType, LeaveBalance, LeaveRequest
 from app.employees.models import Employee
 from app.core.rbac import get_current_employee,require_permission,has_permission
@@ -39,6 +39,9 @@ def create_leave_type(db: Session, data, current_user):
         )
 
     db.bulk_save_objects(balances)
+
+    leave_type.created_at = datetime.utcnow()
+    leave_type.created_by = employee.id
 
     db.commit()
     db.refresh(leave_type)
@@ -106,6 +109,9 @@ def update_leave_type(db: Session, leave_type_id: int, data, current_user):
     for key, value in data.model_dump(exclude_unset=True).items():
         setattr(leave_type, key, value)
 
+    leave_type.updated_by = employee.id
+    leave_type.updated_at = datetime.utcnow()
+
     db.commit()
     db.refresh(leave_type)
 
@@ -120,6 +126,9 @@ def soft_delete_leave_type(db: Session, leave_type_id: int, current_user):
     leave_type = get_leave_type_by_id(db, leave_type_id, current_user)
 
     leave_type.is_active = False
+
+    leave_type.deleted_at=datetime.utcnow()
+    leave_type.deleted_by=employee.id
 
     db.commit()
 
@@ -314,6 +323,9 @@ def update_leave_balance(
     if balance.remaining_leaves < 0:
         raise HTTPException(400, "Used leaves cannot exceed total leaves")
 
+    balance.updated_at = datetime.utcnow()
+    balance.updated_by = employee.id
+
     db.commit()
     db.refresh(balance)
 
@@ -383,6 +395,9 @@ def create_leave_request(db: Session, data, current_user):
         status="Pending",
         is_active=True
     )
+
+    leave_request.created_by = employee.id
+    leave_request.created_at = datetime.utcnow()
 
     db.add(leave_request)
     db.commit()
@@ -456,6 +471,9 @@ def soft_delete_leave_request(db: Session, leave_id: int, current_user):
         raise HTTPException(400, "Leave request already inactive")
 
     leave.is_active = False
+
+    leave.deleted_by = employee.id
+    leave.deleted_at = datetime.utcnow()
 
     db.commit()
     db.refresh(leave)
@@ -549,6 +567,9 @@ def update_leave_request(db: Session, leave_id: int, data, current_user):
 
     for key, value in update_data.items():
         setattr(leave, key, value)
+
+    leave.updated_at = datetime.utcnow()
+    leave.updated_by = employee.id
 
     # =====================
     # BALANCE CALCULATION

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, func
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, func
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 
@@ -14,27 +14,25 @@ class Role(Base):
 
     is_active = Column(Boolean, default=True, nullable=False)
 
+    # ✅ AUDIT FIELDS (CONSISTENT WITH YOUR SYSTEM)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
     created_by = Column(Integer, nullable=True)
-    created_at = Column(DateTime(timezone=True),
-    server_default=func.now(),   # 🔥 REQUIRED
-    onupdate=func.now(),
-    nullable=False
-    )
-    updated_at = Column(
-    DateTime(timezone=True),
-    server_default=func.now(),   # 🔥 REQUIRED
-    onupdate=func.now(),
-    nullable=False
+
+    updated_at = Column(DateTime(timezone=True), nullable=True)
+    updated_by = Column(Integer, nullable=True)
+
+    deleted_at = Column(DateTime(timezone=True), nullable=True)
+    deleted_by = Column(Integer, nullable=True)
+
+    # ✅ RELATIONSHIPS
+    employees = relationship(
+        "Employee",
+        back_populates="role",
+        foreign_keys="Employee.role_id"
     )
 
-    employees = relationship(
-    "Employee",
-    back_populates="role",
-    foreign_keys="Employee.role_id"   # 🔥 THIS IS REQUIRED
-    )
     permissions = relationship(
         "RolePermission",
         back_populates="role",
         cascade="all, delete-orphan"
     )
-    

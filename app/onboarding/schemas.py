@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional
+from datetime import datetime
 
 
 # ==============================
@@ -27,7 +28,6 @@ class OnboardingUpdate(BaseModel):
 # ==============================
 # RESPONSE
 # ==============================
-
 class OnboardingResponse(BaseModel):
     id: int
     employee_id: int
@@ -37,6 +37,14 @@ class OnboardingResponse(BaseModel):
     orientation_sent: bool
     stage: Optional[str]
     is_active: Optional[bool] = True
+
+    # ✅ ADD THESE
+    created_at: Optional[datetime] = None
+    created_by: Optional[int] = None
+    updated_at: Optional[datetime] = None
+    updated_by: Optional[int] = None
+    deleted_at: Optional[datetime] = None
+    deleted_by: Optional[int] = None
 
     class Config:
         from_attributes = True

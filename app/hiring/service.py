@@ -55,7 +55,8 @@ def create_hiring_request(db: Session, hiring_data: HiringRequestCreate, current
         )
 
     hiring_request = HiringRequest(**hiring_data.model_dump(),        
-                                    created_by=employee.id)
+                                    created_by=employee.id,
+                                    created_at=datetime.utcnow())
 
     db.add(hiring_request)
     db.commit()
@@ -221,6 +222,9 @@ def update_hiring_request(
 
             db.add(posting)
 
+    hiring.updated_at = datetime.utcnow()
+    hiring.updated_by = employee.id
+
     db.commit()
     db.refresh(hiring)
 
@@ -245,6 +249,9 @@ def delete_hiring_request(db: Session, hiring_id: int, current_user):
         raise HTTPException(404, "Hiring request not found")
 
     hiring.is_active = False
+
+    hiring.deleted_at = datetime.utcnow()
+    hiring.deleted_by = employee.id
 
     db.commit()
 
@@ -388,6 +395,9 @@ def update_job_posting(
     for field, value in update_fields.items():
         setattr(posting, field, value)
 
+    posting.updated_at = datetime.utcnow()
+    posting.updated_by = employee.id
+
     db.commit()
     db.refresh(posting)
 
@@ -413,6 +423,8 @@ def delete_job_posting(db: Session, posting_id: int, current_user):
         raise HTTPException(404, "Job posting not found")
 
     posting.is_active = False
+    posting.deleted_at = datetime.utcnow()
+    posting.deleted_by = employee.id
 
     db.commit()
 

@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from fastapi import HTTPException
+from datetime import datetime
 
 from app.roles.models import Role
 from app.employees.models import Employee
@@ -41,6 +42,8 @@ def create_role(db: Session, role_data, current_user):
         description=role_data.description,
         is_active=role_data.is_active if role_data.is_active is not None else True
     )
+
+    role.created_by = employee.id
 
     db.add(role)
     db.commit()
@@ -135,6 +138,9 @@ def update_role(db: Session, role_id: int, update_data, current_user):
     for key, value in data.items():
         setattr(role, key, value)
 
+    role.updated_at = datetime.utcnow()
+    role.updated_by = role.id
+
     db.commit()
     db.refresh(role)
 
@@ -170,6 +176,8 @@ def delete_role(db: Session, role_id: int, current_user):
 
     role.is_active = False
 
+    role.deleted_at = datetime.utcnow()
+    role.deleted_by = role.id
     db.commit()
     db.refresh(role)
 

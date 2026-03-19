@@ -52,7 +52,11 @@ class HiringRequest(Base):
     nullable=True
     )
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    created_by = Column(Integer, ForeignKey("employees.id"), nullable=True)
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
+    updated_by = Column(Integer, ForeignKey("employees.id"), nullable=True)
+    deleted_by = Column(Integer, ForeignKey("employees.id"), nullable=True)
+    deleted_at = Column(DateTime, nullable=True)
     department = relationship(
         "Department",
         back_populates="hiring_requests"
@@ -99,8 +103,12 @@ class JobPosting(Base):
 
     is_active = Column(Boolean, default=True, nullable=False)
 
-    created_at = Column(DateTime, server_default=func.now(), nullable=False)
-    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
+    updated_at = Column(DateTime, nullable=True)
+    created_by = Column(Integer, ForeignKey("employees.id"), nullable=True)
+    updated_by = Column(Integer, ForeignKey("employees.id"), nullable=True)
+    deleted_by = Column(Integer, ForeignKey("employees.id"), nullable=True)
+    deleted_at = Column(DateTime, nullable=True)
+
     hiring_request = relationship(
         "HiringRequest",
         back_populates="job_postings"
