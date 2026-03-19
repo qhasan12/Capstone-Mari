@@ -72,20 +72,28 @@ class Employee(Base):
         nullable=False
     )
 
+    created_by = Column(Integer, ForeignKey("employees.id"), nullable=True)
+    updated_by = Column(Integer, ForeignKey("employees.id"), nullable=True)
+    deleted_by = Column(Integer, ForeignKey("employees.id"), nullable=True)
+
+    deleted_at = Column(DateTime, nullable=True, index=True)
+
     __table_args__ = (
         CheckConstraint("salary >= 0", name="check_salary_positive"),
     )
 
     # Relationships
     department = relationship("Department", back_populates="employees")
+    
     role = relationship(
-    "Role",
-    back_populates="employees",
-    foreign_keys=[role_id]  # 🔥 THIS FIXES THE ERROR
+        "Role",
+        back_populates="employees",
+        foreign_keys=[role_id]  # 🔥 THIS FIXES THE ERROR
     )
     manager = relationship(
         "Employee",
         remote_side=[id],
+        foreign_keys=[manager_id],
         backref="subordinates"
     )
 
@@ -121,3 +129,23 @@ class Employee(Base):
         back_populates="employee",
         uselist=False
     )
+    # 🔥 Audit Relationships
+    creator = relationship(
+        "Employee",
+        foreign_keys=[created_by],
+        post_update=True
+    )
+
+    updater = relationship(
+        "Employee",
+        foreign_keys=[updated_by],
+        post_update=True
+    )
+
+    deleter = relationship(
+        "Employee",
+        foreign_keys=[deleted_by],
+        post_update=True
+    )
+
+

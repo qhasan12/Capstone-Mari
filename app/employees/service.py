@@ -114,6 +114,7 @@ def create_employee(db: Session, data, current_user):
     require_permission(db, current_employee, "employee:create")
 
     full_name = data.full_name.strip()
+    # print(current_employee.id)
 
     # =========================
     # VALIDATIONS
@@ -164,6 +165,9 @@ def create_employee(db: Session, data, current_user):
 
     employee = Employee(**data.model_dump())
     employee.full_name = full_name
+
+    employee.created_at = datetime.utcnow()
+    employee.created_by = current_employee.id
 
     db.add(employee)
     db.commit()
