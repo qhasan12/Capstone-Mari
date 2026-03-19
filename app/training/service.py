@@ -14,8 +14,8 @@ from app.core.rbac import get_current_employee, has_permission,require_permissio
 def create_training(db: Session, data, current_user):
 
     creator = get_current_employee(db, current_user)
+    require_permission(db, creator, "training:create")
 
-    require_permission(db, creator,"training:create")
     # =========================
     # Prevent duplicate training
     # =========================
@@ -31,20 +31,29 @@ def create_training(db: Session, data, current_user):
             detail="Training with same title and date already exists"
         )
 
+    # =========================
+    # Create Training
+    # =========================
     training = Training(
         title=data.title,
         description=data.description,
         training_date=data.training_date,
         created_by=creator.id,
+        updated_by=None,
+        deleted_by=None,
+        deleted_at=None,
         is_active=True
     )
 
     db.add(training)
-    db.flush()
+    db.flush()  # get training.id
 
     employee_ids = set()
-
     targets = data.assign_to
+
+    # =========================
+    # Resolve Employees
+    # =========================
 
     # direct employees
     if targets.employees:
@@ -53,39 +62,49 @@ def create_training(db: Session, data, current_user):
     # departments
     if targets.departments:
         dept_emps = db.query(Employee.id).filter(
-            Employee.department_id.in_(targets.departments)
+            Employee.department_id.in_(targets.departments),
+            Employee.is_active == True
         ).all()
-
         employee_ids.update([e[0] for e in dept_emps])
 
     # roles
     if targets.roles:
         role_emps = db.query(Employee.id).filter(
-            Employee.role_id.in_(targets.roles)
+            Employee.role_id.in_(targets.roles),
+            Employee.is_active == True
         ).all()
-
         employee_ids.update([e[0] for e in role_emps])
 
     # managers teams
     if targets.managers:
         team_emps = db.query(Employee.id).filter(
-            Employee.manager_id.in_(targets.managers)
+            Employee.manager_id.in_(targets.managers),
+            Employee.is_active == True
         ).all()
-
         employee_ids.update([e[0] for e in team_emps])
 
     # entire company
     if targets.all_employees:
-        all_emps = db.query(Employee.id).all()
+        all_emps = db.query(Employee.id).filter(
+            Employee.is_active == True
+        ).all()
         employee_ids.update([e[0] for e in all_emps])
 
     if not employee_ids:
         raise HTTPException(400, "No employees resolved")
 
+    # =========================
+    # Create Assignments with audit fields
+    # =========================
     assignments = [
         TrainingAssignment(
             training_id=training.id,
-            employee_id=eid
+            employee_id=eid,
+            status="Assigned",
+            created_by=creator.id,
+            updated_by=None,
+            deleted_by=None,
+            deleted_at=None
         )
         for eid in employee_ids
     ]

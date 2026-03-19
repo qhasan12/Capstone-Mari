@@ -116,6 +116,7 @@ class Employee(Base):
     training_assignments = relationship(
         "TrainingAssignment",
         back_populates="employee",
+        foreign_keys="TrainingAssignment.employee_id",
         cascade="all, delete-orphan"
     )
 

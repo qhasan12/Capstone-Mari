@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Date, ForeignKey, Boolean
+from sqlalchemy import Column, DateTime, Integer, String, Date, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 from sqlalchemy import UniqueConstraint
@@ -13,10 +13,14 @@ class Training(Base):
     description = Column(String(500))
     training_date = Column(Date, nullable=False)
 
-    created_by = Column(Integer, ForeignKey("employees.id"))
+    created_by = Column(Integer, ForeignKey("employees.id"), nullable=True)
+    updated_by = Column(Integer, ForeignKey("employees.id"), nullable=True)
+    deleted_by = Column(Integer, ForeignKey("employees.id"), nullable=True)
+    deleted_at = Column(DateTime, nullable=True, index=True)
 
     is_active = Column(Boolean, default=True)
 
+    # ✅ Correct relationship
     assignments = relationship(
         "TrainingAssignment",
         back_populates="training",
@@ -34,8 +38,23 @@ class TrainingAssignment(Base):
 
     status = Column(String(50), default="Assigned")
 
-    training = relationship("Training", back_populates="assignments")
-    employee = relationship("Employee", back_populates="training_assignments")
+    # ✅ Correct
+    training = relationship(
+        "Training",
+        back_populates="assignments"
+    )
+
+    # ✅ IMPORTANT FIX (disambiguation happens here)
+    employee = relationship(
+        "Employee",
+        back_populates="training_assignments",
+        foreign_keys=[employee_id]
+    )
+
+    created_by = Column(Integer, ForeignKey("employees.id"), nullable=True)
+    updated_by = Column(Integer, ForeignKey("employees.id"), nullable=True)
+    deleted_by = Column(Integer, ForeignKey("employees.id"), nullable=True)
+    deleted_at = Column(DateTime, nullable=True, index=True)
 
     __table_args__ = (
         UniqueConstraint(

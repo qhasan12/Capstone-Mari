@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from datetime import date
+from datetime import date, datetime
 from typing import List, Optional
 
 
@@ -35,6 +35,12 @@ class TrainingResponse(BaseModel):
     description: Optional[str]
     training_date: date
     is_active: bool
+    created_at: datetime
+    updated_at: datetime
+    created_by: Optional[int]
+    updated_by: Optional[int]
+    deleted_by: Optional[int]
+    deleted_at: Optional[datetime]
 
     class Config:
         from_attributes = True
