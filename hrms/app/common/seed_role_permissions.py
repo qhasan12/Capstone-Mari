@@ -103,6 +103,7 @@ ROLE_PERMISSION_MAP = {
     "MGR": [
 
         "employee:view_team",
+        
         "leave_request:create",
         "leave_request:view_team",
         "leave_request:approve",
