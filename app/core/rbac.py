@@ -40,7 +40,7 @@ def get_current_employee(db: Session, current_user):
             status_code=404,
             detail="Employee record not found"
         )
-
+    print("TOKEN USER:", current_user)
     return employee
 
 # =========================
