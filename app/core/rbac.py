@@ -24,6 +24,8 @@ def ensure_superadmin(current_user):
 # GET CURRENT EMPLOYEE
 # =========================
 def get_current_employee(db: Session, current_user):
+    print("TOKEN USER:", current_user)
+    print("*******")
 
     if not current_user.employee_id:
         raise HTTPException(
@@ -40,7 +42,7 @@ def get_current_employee(db: Session, current_user):
             status_code=404,
             detail="Employee record not found"
         )
-    print("TOKEN USER:", current_user)
+
     return employee
 
 # =========================
