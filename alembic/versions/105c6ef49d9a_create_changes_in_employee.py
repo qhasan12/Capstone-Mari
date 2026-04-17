@@ -1,8 +1,8 @@
-"""add audit fields to employee
+"""create changes in employee
 
-Revision ID: 1f7564054785
+Revision ID: 105c6ef49d9a
 Revises: 
-Create Date: 2026-03-19 15:02:18.445483
+Create Date: 2026-03-24 16:22:44.721524
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '1f7564054785'
+revision: str = '105c6ef49d9a'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -36,6 +36,12 @@ def upgrade() -> None:
     sa.Column('name', sa.String(length=100), nullable=True),
     sa.Column('default_allocation', sa.Integer(), nullable=False),
     sa.Column('is_active', sa.Boolean(), nullable=True),
+    sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=True),
+    sa.Column('created_by', sa.Integer(), nullable=True),
+    sa.Column('updated_at', sa.DateTime(), nullable=True),
+    sa.Column('updated_by', sa.Integer(), nullable=True),
+    sa.Column('deleted_at', sa.DateTime(), nullable=True),
+    sa.Column('deleted_by', sa.Integer(), nullable=True),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('name')
     )
@@ -54,9 +60,12 @@ def upgrade() -> None:
     sa.Column('level', sa.Integer(), nullable=True),
     sa.Column('description', sa.String(length=255), nullable=True),
     sa.Column('is_active', sa.Boolean(), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
     sa.Column('created_by', sa.Integer(), nullable=True),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), nullable=True),
+    sa.Column('updated_by', sa.Integer(), nullable=True),
+    sa.Column('deleted_at', sa.DateTime(timezone=True), nullable=True),
+    sa.Column('deleted_by', sa.Integer(), nullable=True),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('title')
     )
@@ -77,7 +86,7 @@ def upgrade() -> None:
     sa.Column('confirmation_status', sa.String(length=50), nullable=True),
     sa.Column('is_active', sa.Boolean(), nullable=False),
     sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+    sa.Column('updated_at', sa.DateTime(), nullable=True),
     sa.Column('created_by', sa.Integer(), nullable=True),
     sa.Column('updated_by', sa.Integer(), nullable=True),
     sa.Column('deleted_by', sa.Integer(), nullable=True),
@@ -139,9 +148,14 @@ def upgrade() -> None:
     sa.Column('created_by', sa.Integer(), nullable=True),
     sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
     sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
-    sa.ForeignKeyConstraint(['created_by'], ['employees.id'], ondelete='SET NULL'),
+    sa.Column('updated_by', sa.Integer(), nullable=True),
+    sa.Column('deleted_by', sa.Integer(), nullable=True),
+    sa.Column('deleted_at', sa.DateTime(), nullable=True),
+    sa.ForeignKeyConstraint(['created_by'], ['employees.id'], ),
+    sa.ForeignKeyConstraint(['deleted_by'], ['employees.id'], ),
     sa.ForeignKeyConstraint(['department_id'], ['departments.id'], ondelete='RESTRICT'),
     sa.ForeignKeyConstraint(['manager_id'], ['employees.id'], ),
+    sa.ForeignKeyConstraint(['updated_by'], ['employees.id'], ),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('department_id', 'role_title', 'is_active', name='uq_active_hiring_request_per_role_department')
     )
@@ -155,10 +169,11 @@ def upgrade() -> None:
     sa.Column('used_leaves', sa.Integer(), nullable=True),
     sa.Column('remaining_leaves', sa.Integer(), nullable=True),
     sa.Column('is_active', sa.Boolean(), nullable=True),
+    sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=True),
+    sa.Column('created_by', sa.Integer(), nullable=True),
     sa.ForeignKeyConstraint(['employee_id'], ['employees.id'], ),
     sa.ForeignKeyConstraint(['leave_type_id'], ['leave_types.id'], ),
-    sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('employee_id', 'leave_type_id', name='unique_employee_leave')
+    sa.PrimaryKeyConstraint('id')
     )
     op.create_table('leave_requests',
     sa.Column('id', sa.Integer(), nullable=False),
@@ -169,6 +184,12 @@ def upgrade() -> None:
     sa.Column('reason', sa.String(length=500), nullable=True),
     sa.Column('status', sa.String(length=50), nullable=True),
     sa.Column('is_active', sa.Boolean(), nullable=True),
+    sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=True),
+    sa.Column('created_by', sa.Integer(), nullable=True),
+    sa.Column('updated_at', sa.DateTime(), nullable=True),
+    sa.Column('updated_by', sa.Integer(), nullable=True),
+    sa.Column('deleted_at', sa.DateTime(), nullable=True),
+    sa.Column('deleted_by', sa.Integer(), nullable=True),
     sa.ForeignKeyConstraint(['employee_id'], ['employees.id'], ),
     sa.ForeignKeyConstraint(['leave_type_id'], ['leave_types.id'], ),
     sa.PrimaryKeyConstraint('id')
@@ -182,6 +203,12 @@ def upgrade() -> None:
     sa.Column('orientation_sent', sa.Boolean(), nullable=True),
     sa.Column('stage', sa.String(length=50), nullable=True),
     sa.Column('is_active', sa.Boolean(), nullable=True),
+    sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=True),
+    sa.Column('created_by', sa.Integer(), nullable=True),
+    sa.Column('updated_at', sa.DateTime(), nullable=True),
+    sa.Column('updated_by', sa.Integer(), nullable=True),
+    sa.Column('deleted_at', sa.DateTime(), nullable=True),
+    sa.Column('deleted_by', sa.Integer(), nullable=True),
     sa.ForeignKeyConstraint(['employee_id'], ['employees.id'], ),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('employee_id')
@@ -194,6 +221,12 @@ def upgrade() -> None:
     sa.Column('manager_approved', sa.Boolean(), nullable=True),
     sa.Column('status', sa.String(length=50), nullable=True),
     sa.Column('is_active', sa.Boolean(), nullable=True),
+    sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=True),
+    sa.Column('created_by', sa.Integer(), nullable=True),
+    sa.Column('updated_at', sa.DateTime(), nullable=True),
+    sa.Column('updated_by', sa.Integer(), nullable=True),
+    sa.Column('deleted_at', sa.DateTime(), nullable=True),
+    sa.Column('deleted_by', sa.Integer(), nullable=True),
     sa.ForeignKeyConstraint(['employee_id'], ['employees.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
@@ -225,6 +258,12 @@ def upgrade() -> None:
     sa.Column('email_deactivated', sa.Boolean(), nullable=True),
     sa.Column('clearance_completed', sa.Boolean(), nullable=True),
     sa.Column('is_active', sa.Boolean(), nullable=True),
+    sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=True),
+    sa.Column('created_by', sa.Integer(), nullable=True),
+    sa.Column('updated_at', sa.DateTime(), nullable=True),
+    sa.Column('updated_by', sa.Integer(), nullable=True),
+    sa.Column('deleted_at', sa.DateTime(), nullable=True),
+    sa.Column('deleted_by', sa.Integer(), nullable=True),
     sa.ForeignKeyConstraint(['resignation_id'], ['resignations.id'], ),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('resignation_id')
@@ -236,9 +275,15 @@ def upgrade() -> None:
     sa.Column('closing_date', sa.Date(), nullable=True),
     sa.Column('status', sa.String(length=50), nullable=False),
     sa.Column('is_active', sa.Boolean(), nullable=False),
-    sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+    sa.Column('updated_at', sa.DateTime(), nullable=True),
+    sa.Column('created_by', sa.Integer(), nullable=True),
+    sa.Column('updated_by', sa.Integer(), nullable=True),
+    sa.Column('deleted_by', sa.Integer(), nullable=True),
+    sa.Column('deleted_at', sa.DateTime(), nullable=True),
+    sa.ForeignKeyConstraint(['created_by'], ['employees.id'], ),
+    sa.ForeignKeyConstraint(['deleted_by'], ['employees.id'], ),
     sa.ForeignKeyConstraint(['hiring_request_id'], ['hiring_requests.id'], ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['updated_by'], ['employees.id'], ),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('hiring_request_id', 'is_active', name='uq_active_job_posting_per_hiring_request')
     )

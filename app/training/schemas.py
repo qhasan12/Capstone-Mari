@@ -38,3 +38,15 @@ class TrainingResponse(BaseModel):
 
     class Config:
         from_attributes = True
+class TrainingAssignmentEmployee(BaseModel):
+    id: int
+    full_name: str
+    email: str
+
+    class Config:
+        from_attributes = True
+
+
+class TrainingAssignmentsResponse(BaseModel):
+    training_id: int
+    employees: List[TrainingAssignmentEmployee]

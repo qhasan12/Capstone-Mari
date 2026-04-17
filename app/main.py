@@ -17,7 +17,7 @@ from app.roles import models as role_models
 from app.auth.models import AuthUser
 from app.permissions import models as permission_models
 from app.training import models as training_models
-
+from app.training import service as get_training_assignments
 # Routers
 from app.leave.routes import router as leave_router
 from app.onboarding.routes import router as onboarding_router
@@ -122,3 +122,20 @@ app.include_router(employee_router, prefix="/api/v1/employees", tags=["Employees
 app.include_router(department_router, prefix="/api/v1/departments", tags=["Departments"])
 
 app.include_router(training_router, prefix="/api/v1/trainings", tags=["Trainings"])
+
+from fastapi import Query
+
+DUMMY_API_KEY = "123456"
+
+@app.get("/tool/employees", tags=["Tool"])
+def tool_get_employees(api_key: str = Query(...)):
+    if api_key != DUMMY_API_KEY:
+        raise HTTPException(status_code=401, detail="Invalid API key")
+
+    # 🔥 For now: dummy response
+    return {
+        "employees": [
+            {"id": 1, "name": "Ali"},
+            {"id": 2, "name": "Sara"}
+        ]
+    }

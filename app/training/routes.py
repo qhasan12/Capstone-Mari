@@ -5,12 +5,44 @@ from math import ceil
 from app.core.database import get_db
 from app.common.schemas import APIResponse
 from app.auth.security import get_current_user
+from app.training.schemas import TrainingAssignmentsResponse, TrainingAssignmentEmployee
 
 from . import schemas, service
 
 
 router = APIRouter(tags=["Training"])
 
+
+# =====================================================
+# GET ASSIGNMENTS
+# =====================================================
+@router.get(
+    "/{training_id}/assignments",
+    response_model=TrainingAssignmentsResponse,
+    status_code=status.HTTP_200_OK
+)
+def get_training_assignments(
+    training_id: int,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    employees = service.get_training_assignments(
+        db,
+        training_id,
+        current_user
+    )
+
+    return TrainingAssignmentsResponse(
+        training_id=training_id,
+        employees=[
+            TrainingAssignmentEmployee(
+                id=e.id,
+                full_name=e.full_name,
+                email=e.email
+            )
+            for e in employees
+        ]
+    )
 
 # =====================================================
 # CREATE

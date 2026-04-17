@@ -5,7 +5,36 @@ from fastapi import HTTPException, status
 from .models import Training, TrainingAssignment
 from app.employees.models import Employee
 from app.core.rbac import get_current_employee, has_permission,require_permission
+# =====================================================
+# GET TRAINING ASSIGNMENTS
+# =====================================================
 
+def get_training_assignments(db: Session, training_id: int, current_user):
+
+    employee = get_current_employee(db, current_user)
+
+    # 🔐 Permission check
+    if not (
+        has_permission(db, employee, "training:view") or
+        has_permission(db, employee, "training:view_team") or
+        has_permission(db, employee, "training:view_self")
+    ):
+        raise HTTPException(status_code=403, detail="Permission denied")
+
+    assignments = db.query(TrainingAssignment).filter(
+        TrainingAssignment.training_id == training_id
+    ).all()
+
+    if not assignments:
+        return []
+
+    employee_ids = [a.employee_id for a in assignments]
+
+    employees = db.query(Employee).filter(
+        Employee.id.in_(employee_ids)
+    ).all()
+
+    return employees
 
 # =====================================================
 # CREATE
